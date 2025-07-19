@@ -77,22 +77,29 @@ body {
 .hero {
   position: relative;
   height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   overflow: hidden;
 }
-.hero-video {
+
+.hero-video-wrapper {
   position: absolute;
   top: 0; left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
   z-index: -2;
 }
+
+.hero-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  object-fit: cover;
+}
+
 .hero-overlay {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
   background: rgba(0,0,0,0.5);
   z-index: -1;
   display: flex;
@@ -480,4 +487,71 @@ body {
     flex-direction: column;
     text-align: center;
   }
+}
+
+
+
+/* Project Details - Global Scope */
+.project-detail-container {
+  min-height: 100vh;
+  padding: 60px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.project-detail-container h1 {
+  font-size: 2.5rem;
+  color: #ff6600;
+  margin-bottom: 1rem;
+}
+
+.project-detail-container p {
+  font-size: 1.1rem;
+  max-width: 700px;
+  margin-bottom: 2rem;
+  color: #ccc;
+  line-height: 1.7;
+}
+
+.video-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 960px;         /* Make it wider */
+  aspect-ratio: 16 / 9;     /* Keeps consistent size */
+  margin: 2rem auto;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.4);
+}
+
+.video-wrapper iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.multi-video-block {
+  text-align: center;
+}
+
+.multi-video-block h3 {
+  color: #fff;
+  margin: 1.5rem 0 0.5rem;
+  font-size: 1.25rem;
+}
+
+
+.back-link {
+  display: inline-block;
+  margin-top: 60px;
+  color: #ff6600;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.back-link:hover {
+  text-decoratfion: underline;
 }
