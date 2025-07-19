@@ -24,31 +24,28 @@ document.addEventListener('DOMContentLoaded', () => {
   // Dynamic Projects
   const projectData = [
     {
-      title: "Auto Dealership Website",
-      category: "Web Development",
-      client: "SpeedAuto",
+      id: 1,
+      title: "Feynlab Showcase",
+      category: "High-End Video & Content Production",
+      client: "Feynlab",
       location: "Riyadh",
-      year: "2024",
-      image: "images/project1.jpg",
-      link: "#"
+      image: "images/project1.jpg"
     },
     {
-      title: "Luxury Car Promo Reel",
-      category: "Video Production",
-      client: "Elite Motors",
-      location: "Jeddah",
-      year: "2023",
-      image: "images/project2.jpg",
-      link: "#"
+      id: 2,
+      title: "SaudiStig Showcase",
+      category: "High-End Video & Content Production",
+      client: "SaudiStig",
+      location: "Riyadh",
+      image: "images/project2.jpg"
     },
     {
-      title: "Off-Road Brand Campaign",
-      category: "Marketing Strategy",
-      client: "DesertX",
-      location: "Dammam",
-      year: "2025",
-      image: "images/project3.jpg",
-      link: "#"
+      id: 3,
+      title: "SaudiStig Showcase",
+      category: "High-End Video & Content Production",
+      client: "Strive ME",
+      location: "Riyadh",
+      image: "images/project3.jpg"
     }
   ];
 
@@ -63,13 +60,12 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
       <div class="project-info">
         <h3>${project.title}</h3>
-        <span class="project-category">${project.category}</span>
+        <a href="#services" class="project-category">${project.category}</a>
         <div class="project-details">
           <p><strong>Client:</strong> ${project.client}</p>
           <p><strong>Location:</strong> ${project.location}</p>
-          <p><strong>Launch Year:</strong> ${project.year}</p>
         </div>
-        <a href="${project.link}" class="project-btn">View Project</a>
+        <a href="project-details.html?id=${project.id}" class="project-btn">View Project</a>
       </div>
     `;
     projectsGrid.appendChild(card);
