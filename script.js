@@ -25,28 +25,54 @@ document.addEventListener('DOMContentLoaded', () => {
   const projectData = [
     {
       id: 1,
-      title: "Feynlab Showcase",
+      title: "VIP Quick Service",
       category: "High-End Video & Content Production",
       client: "Feynlab",
       location: "Riyadh",
-      image: "images/project1.jpg"
+      image: "Projects/VIP.png"
     },
     {
       id: 2,
-      title: "SaudiStig Showcase",
+      title: "ArabGT × SAMF",
       category: "High-End Video & Content Production",
-      client: "SaudiStig",
+      client: "ArabGT",
       location: "Riyadh",
-      image: "images/project2.jpg"
+      image: "Projects/SAMF0001.jpg"
     },
     {
       id: 3,
-      title: "SaudiStig Showcase",
+      title: "Hongqi × StriveME",
       category: "High-End Video & Content Production",
       client: "Strive ME",
       location: "Riyadh",
-      image: "images/project3.jpg"
-    }
+      image: "Projects/Hongqi.png"
+    },
+    {
+      id: 4,
+      title: "Toyota LC300 HEV MAX",
+      category: "High-End Video & Content Production",
+      client: "Abdullateef Jameel",
+      location: "Riyadh",
+      image: "Projects/ToyotaLC3000001.jpg"
+    },
+    {
+      id: 5,
+      title: "Feynlab",
+      category: "High-End Video & Content Production",
+      client: "Feynlab",
+      location: "Riyadh",
+      image: "Projects/Feynlab0001.jpg"
+    },
+    {
+      id: 6,
+      title: "Albassami × Seven Car Lounge",
+      category: "High-End Video & Content Production",
+      client: "Seven Car Lounge",
+      location: "Riyadh",
+      image: "Projects/Albassami0001.jpg"
+    },
+    
+    
   ];
 
   const projectsGrid = document.getElementById("projectsGrid");
