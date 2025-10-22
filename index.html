@@ -233,32 +233,113 @@
   <!-- Contact -->
   <section id="contact" class="contact fade-in">
     <div class="container">
-      <div class="contact-content">
-        <div class="contact-info">
-          <h3>Contact Us</h3>
-          <div class="contact-item"><h4>Email:</h4><p>info@bx.media</p></div>
-          <div class="contact-item"><h4>Phone:</h4><p>+966 53 509 6137</p></div>
-          <div class="contact-item">
-            <h4>WhatsApp:</h4>
-            <p>
-              <a href="https://wa.me/966557969551" target="_blank" rel="noopener">+966 55 796 9551</a>
-            </p>
+      <div class="section-header with-subtitle">
+        <h4>Contact</h4>
+        <h2>Let’s build your next launch together</h2>
+        <p class="section-intro">Share a few details and our producers will respond within 24 hours with a tailored content roadmap.</p>
+      </div>
+
+      <div class="contact-grid">
+        <div class="contact-details">
+          <div class="contact-card">
+            <h3>Talk to our team</h3>
+            <p>We partner with marketing leaders, product teams, and founders to deliver cinematic stories that convert.</p>
+            <div class="contact-item">
+              <i class="fas fa-envelope"></i>
+              <div>
+                <h4>Email</h4>
+                <a href="mailto:info@bx.media">info@bx.media</a>
+              </div>
+            </div>
+            <div class="contact-item">
+              <i class="fas fa-phone"></i>
+              <div>
+                <h4>Phone</h4>
+                <a href="tel:+966535096137">+966 53 509 6137</a>
+              </div>
+            </div>
+            <div class="contact-item">
+              <i class="fab fa-whatsapp"></i>
+              <div>
+                <h4>WhatsApp</h4>
+                <a href="https://wa.me/966557969551" target="_blank" rel="noopener">+966 55 796 9551</a>
+              </div>
+            </div>
+            <div class="contact-item">
+              <i class="fas fa-location-dot"></i>
+              <div>
+                <h4>Studio</h4>
+                <p>Riyadh, Saudi Arabia — servicing clients across the GCC.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="contact-card">
+            <h3>Engagement snapshots</h3>
+            <ul class="contact-highlights">
+              <li><span>01</span> Launch retainers for OEM & dealership networks</li>
+              <li><span>02</span> Product storytelling for EV, SUV, and performance lines</li>
+              <li><span>03</span> Turnkey event coverage and experiential recaps</li>
+            </ul>
+            <a class="contact-cta" href="project-details.html" target="_blank">View project case studies <i class="fas fa-arrow-up-right-from-square"></i></a>
           </div>
         </div>
 
-        <div class="contact-form">
-          <h3>Get In Touch</h3>
-          <form name="contact" method="POST" netlify>
-            <div class="form-group">
-              <input type="text" name="name" placeholder="Your Name" required />
+        <div class="contact-form-panel">
+          <h3>Project intake form</h3>
+          <form name="contact" method="POST" data-netlify="true">
+            <input type="hidden" name="form-name" value="contact" />
+            <div class="form-row">
+              <div class="form-group">
+                <label for="name">Full Name</label>
+                <input id="name" type="text" name="name" placeholder="Your Name" required />
+              </div>
+              <div class="form-group">
+                <label for="email">Work Email</label>
+                <input id="email" type="email" name="email" placeholder="name@company.com" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="company">Company</label>
+                <input id="company" type="text" name="company" placeholder="Brand / Organization" required />
+              </div>
+              <div class="form-group">
+                <label for="projectType">Project Type</label>
+                <select id="projectType" name="projectType" required>
+                  <option value="" disabled selected>Select an option</option>
+                  <option value="launch">Vehicle Launch Campaign</option>
+                  <option value="retainer">Monthly Content Retainer</option>
+                  <option value="event">Event Coverage & Recap</option>
+                  <option value="production">Production Support Only</option>
+                  <option value="other">Other / Not sure</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="budget">Estimated Budget</label>
+                <select id="budget" name="budget" required>
+                  <option value="" disabled selected>Select range</option>
+                  <option value="<25k">Below SAR 25K</option>
+                  <option value="25-75k">SAR 25K – 75K</option>
+                  <option value="75-150k">SAR 75K – 150K</option>
+                  <option value="150k-plus">Above SAR 150K</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="timeline">Ideal Timeline</label>
+                <input id="timeline" type="text" name="timeline" placeholder="e.g. Q1 2026" />
+              </div>
             </div>
             <div class="form-group">
-              <input type="email" name="email" placeholder="Your Email" required />
+              <label for="message">Project Details</label>
+              <textarea id="message" name="message" placeholder="Tell us about your goals, deliverables, and launch date." rows="5" required></textarea>
             </div>
-            <div class="form-group">
-              <textarea name="message" placeholder="Your Message" rows="5" required></textarea>
+            <div class="form-footer">
+              <button type="submit" class="submit-btn">Submit Brief</button>
+              <p class="form-note">By submitting, you agree to our team contacting you about BX Media services.</p>
             </div>
-            <button type="submit" class="submit-btn">Send Message</button>
           </form>
         </div>
       </div>
