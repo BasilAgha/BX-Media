@@ -1,0 +1,843 @@
+
+/* Reset and Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  line-height: 1.6;
+  color: #ddd;
+  background-color: #121212;
+  overflow-x: hidden;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Navbar */
+.navbar {
+  background: #1e1e1e;
+  position: fixed;
+  width: 100%;
+  top: 0;
+  padding: 1rem 0;
+  z-index: 1000;
+}
+
+.nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+}
+
+.logo-img {
+  height: 40px;
+}
+
+.nav-menu {
+  display: flex;
+  list-style: none;
+}
+
+.nav-menu li {
+  margin-left: 2rem;
+}
+
+.nav-menu a {
+  color: #ddd;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.nav-menu a:hover {
+  color: #ff6600;
+}
+
+.hamburger {
+  display: none;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+.hamburger span {
+  height: 3px;
+  width: 25px;
+  background: #fff;
+  margin: 3px 0;
+}
+
+/* Hero Section */
+.hero {
+  position: relative;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  background: #000; /* fallback if video doesn't load */
+}
+
+.hero-video-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.hero-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.hero-overlay {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+}
+
+
+.slide-content {
+  padding: 2rem 1rem;
+  max-width: 900px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.slide-content h1 {
+  font-size: 4rem;
+  color: #fff;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  line-height: 1.2;
+}
+
+.slide-content p {
+  font-size: 1.25rem;
+  color: #ccc;
+  margin-bottom: 2.5rem;
+  line-height: 1.6;
+}
+
+.cta-btn {
+  background: #ff6600;
+  color: white;
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  border-radius: 40px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.cta-btn:hover {
+  background: #e65c00;
+  transform: scale(1.05);
+}
+
+/* About Section */
+.about {
+  padding: 80px 0;
+  background: #1a1a1a;
+}
+
+.about-flex {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding-top: 2rem;
+}
+
+.about-logo img {
+  max-width: 150px;
+}
+
+.about-text {
+  flex: 1;
+  max-width: 600px;
+  color: #ccc;
+  font-size: 1.1rem;
+  line-height: 1.8;
+}
+
+.about-text h2 {
+  color: #ff6600;
+  margin-bottom: 1rem;
+}
+
+/* Section Header */
+.section-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.section-header h4 {
+  color: #ff6600;
+  font-size: 1rem;
+  text-transform: uppercase;
+}
+
+.section-header h2 {
+  color: #fff;
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+/* Services */
+.services {
+  background: #121212;
+  padding: 80px 0;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.service-card {
+  background: #1e1e1e;
+  padding: 2rem;
+  border-radius: 10px;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.service-card:hover {
+  transform: translateY(-5px);
+}
+
+.service-icon {
+  width: 80px;
+  height: 80px;
+  background: #ff6600;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  font-size: 2rem;
+}
+
+.service-card h3 {
+  color: #fff;
+  margin-bottom: 1rem;
+}
+
+.service-card p {
+  color: #bbb;
+}
+
+/* s */
+/* Clients */
+.clients {
+  background: #121212;
+  padding: 60px 0;
+}
+
+.clients-carousel {
+  overflow: hidden;
+  position: relative;
+}
+
+.clients-track {
+  display: flex;
+  width: max-content;
+  animation: scrollClients 20s linear infinite;
+  gap: 3rem;
+  align-items: center;
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.clients-track img {
+  height: 80px;
+  object-fit: contain;
+  filter: grayscale(100%);
+  transition: filter 0.3s ease;
+  margin: 0 10px;
+  flex: 0 0 auto;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.clients-track img:hover {
+  filter: none;
+}
+
+.clients-wrapper {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+}
+
+
+@keyframes scrollClients {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* Mobile - keep animation but slightly reduce height */
+@media (max-width: 768px) {
+  .clients-track img {
+    height: 50px;
+    margin: 0 8px;
+  }
+}
+
+
+/* Projects */
+.projects {
+  background: #1a1a1a;
+  padding: 80px 0;
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.project-card {
+  background: #2a2a2a;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.project-card:hover {
+  transform: translateY(-5px);
+}
+
+.project-image img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.project-info {
+  padding: 1.2rem;
+  color: #ddd;
+}
+
+.project-info h3 {
+  color: #ff6600;
+  margin-bottom: 0.5rem;
+}
+
+.project-category {
+  background: #ff6600;
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  margin-bottom: 1rem;
+  display: inline-block;
+}
+
+.project-details p {
+  font-size: 0.9rem;
+  margin: 0.3rem 0;
+}
+
+.project-btn {
+  margin-top: 1rem;
+  background: #ff6600;
+  color: #fff;
+  text-decoration: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 5px;
+  display: inline-block;
+  transition: background 0.3s ease;
+}
+
+.project-btn:hover {
+  background: #e65c00;
+}
+
+/* Contact */
+.contact {
+  background: #121212;
+  padding: 80px 0;
+}
+
+.contact-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3rem;
+}
+
+.contact-info, .contact-form {
+  flex: 1;
+  min-width: 300px;
+}
+
+.contact-info h3,
+.contact-form h3 {
+  color: #ff6600;
+  margin-bottom: 2rem;
+}
+
+.contact-item h4 {
+  color: #fff;
+}
+
+.contact-item p {
+  color: #ccc;
+}
+
+.contact-form input,
+.contact-form textarea {
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid #444;
+  background: #1e1e1e;
+  color: #fff;
+  border-radius: 5px;
+}
+
+.submit-btn {
+  background: #ff6600;
+  color: white;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.submit-btn:hover {
+  background: #e65c00;
+}
+
+/* Footer */
+.footer {
+  background: #1e1e1e;
+  color: #ccc;
+  padding: 60px 0 0;
+}
+
+.footer-content {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2rem;
+  padding-bottom: 40px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.footer-section {
+  flex: 1 1 250px;
+  min-width: 220px;
+}
+
+.footer-section h3,
+.footer-section h4 {
+  color: #ff6600;
+  margin-bottom: 1rem;
+}
+
+.footer-section p {
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.footer-section ul {
+  list-style: none;
+  padding: 0;
+}
+
+.footer-section ul li {
+  margin-bottom: 0.5rem;
+}
+
+.footer-section ul li a {
+  color: #ccc;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.footer-section ul li a:hover {
+  color: #ff6600;
+}
+
+.footer-bottom {
+  text-align: center;
+  padding: 30px 20px;
+}
+
+.footer-bottom .social-links.centered {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 20px;
+}
+
+.footer-bottom .social-links.centered a {
+  background: #ff6600;
+  color: white;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  text-decoration: none;
+  transition: background 0.3s ease;
+}
+
+.footer-bottom .social-links.centered a:hover {
+  background: #e65c00;
+}
+
+.footer-bottom p {
+  font-size: 0.9rem;
+  color: #888;
+}
+
+/* Scroll Animation */
+.fade-in.hidden {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .hamburger {
+    display: flex;
+  }
+
+  .nav-menu {
+    flex-direction: column;
+    position: fixed;
+    background: #1e1e1e;
+    top: 70px;
+    left: -100%;
+    width: 100%;
+    text-align: center;
+    transition: left 0.3s;
+  }
+
+  .nav-menu.active {
+    left: 0;
+  }
+
+  .nav-menu li {
+    margin: 1rem 0;
+  }
+
+  .about-flex,
+  .contact-content,
+  .footer-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .slide-content h1 {
+    font-size: 2.2rem;
+  }
+
+  .slide-content p {
+    font-size: 1rem;
+  }
+}
+
+/* ===== Project Details: Clean, centered video layout (CSS-only) ===== */
+
+/* Center the details page content and add breathing room below fixed navbar */
+.project-detail-container {
+  max-width: 900px;
+  margin: 120px auto 60px;
+  padding: 0 20px;
+}
+
+/* Keep main title/intro centered and readable */
+.project-detail-container h1 {
+  color: #fff;
+  text-align: center;
+  margin-bottom: 0.75rem;
+}
+.project-detail-container > p {
+  max-width: 720px;
+  margin: 0 auto 2rem;
+  text-align: center;
+  color: #bbb;
+}
+
+/* Ensure section titles (h3) sit ABOVE videos and look consistent */
+.project-detail-container h3 {
+  color: #fff;
+  text-align: center;
+  margin: 1.25rem auto 0.75rem;
+}
+
+/* Core responsive wrapper for all embeds (YouTube/Vimeo) */
+.video-wrapper {
+  position: relative;
+  width: min(900px, 100%);
+  margin: 0 auto 24px;
+  aspect-ratio: 16 / 9;         /* default to landscape for consistency */
+  background: #000;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+
+/* If any inline padding-top tricks are present, neutralize them */
+.video-wrapper[style] {
+  padding-top: 0 !important;
+  height: auto !important;
+}
+
+/* Make the embedded player fill the wrapper (overrides inline styles) */
+.video-wrapper iframe {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  border: 0 !important;
+}
+
+/* For now, keep multi-video sections stacked so titles remain above videos
+   without changing HTML structure. (We can switch to a 2-col grid later.) */
+.multi-video-block {
+  display: block;
+}
+
+/* Enhanced Back Button */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 100px 0 30px;
+  padding: 10px 18px;
+  color: #fff;
+  background: #ff6600;
+  border-radius: 30px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255, 102, 0, 0.3);
+}
+
+.back-link::before {
+  content: "←";
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.back-link:hover {
+  background: #e65c00;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 102, 0, 0.5);
+}
+
+/* Professional 2-column grid for multi-video sections */
+/* .multi-video-block {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.multi-video-block .video-block h3 {
+  text-align: left;
+  margin-left: 4px;
+}
+
+/* On small screens, stack back to single column */
+/*@media (max-width: 900px) {
+  .multi-video-block {
+    grid-template-columns: 1fr;
+  }
+  .multi-video-block .video-block h3 {
+    text-align: center;
+    margin-left: 0;
+  }
+} */
+/* Subtle borders for video embeds */
+/* Colored borders for video embeds */
+.video-wrapper {
+  border: 2px solid #ff6600;       /* brand color border */
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+/* On hover: brighten and glow */
+.video-wrapper:hover {
+  border-color: #ffa64d;           /* lighter orange on hover */
+  box-shadow: 0 0 16px rgba(255, 102, 0, 0.5);
+  transform: scale(1.02);          /* subtle pop */
+}
+
+/* Portrait / vertical videos */
+.video-wrapper.tall {
+  aspect-ratio: 9 / 16;   /* portrait ratio */
+  max-width: 400px;       /* keep them slim */
+  margin: 0 auto 24px;    /* center them */
+  border: 2px solid #ff6600;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.video-wrapper.tall:hover {
+  border-color: #ffa64d;
+  box-shadow: 0 0 16px rgba(255, 102, 0, 0.5);
+  transform: scale(1.02);
+}
+
+/* ===== Video Gallery (main + thumbnails, additive) ===== */
+.video-gallery {
+  max-width: 980px;
+  margin: 24px auto 80px;
+  padding: 0 12px;
+}
+
+.video-main {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+/* Main wrapper defaults to 16:9; portrait uses .tall */
+.video-main .video-wrapper {
+  position: relative;
+  width: min(900px, 100%);
+  aspect-ratio: 16 / 9;
+  background: #000;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 2px solid #ff6600;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  transition: all 0.3s ease;
+}
+
+.video-main .video-wrapper.tall {
+  aspect-ratio: 9 / 16;
+  width: min(540px, 100%);
+}
+
+.video-main .video-wrapper:hover {
+  border-color: #ffa64d;
+  box-shadow: 0 0 16px rgba(255, 102, 0, 0.5);
+  transform: scale(1.01);
+}
+
+.video-main .video-wrapper iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* Thumbnails grid (mixed portrait/landscape) */
+.video-thumbs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+/* Thumb card defaults to 16:9; add .tall for reels */
+.video-thumb {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border: 2px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.video-thumb.tall { aspect-ratio: 9 / 16; }
+
+.video-thumb.is-active,
+.video-thumb:hover {
+  border-color: #ff6600;
+  box-shadow: 0 0 10px rgba(255, 102, 0, 0.35);
+  transform: translateY(-2px);
+}
+
+/* Make thumbs non-interactive players (prevent playback in grid) */
+.video-thumb iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .video-gallery { margin-bottom: 60px; }
+}
+/* --- Lock gallery layout for mobile --- */
+@media (max-width: 768px) {
+  .video-thumbs {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 10px;
+  }
+
+  .video-thumb {
+    aspect-ratio: 16 / 9; /* keep consistent card look */
+    width: 100%;
+  }
+
+  /* Make sure portrait reels don’t blow up too tall */
+  .video-thumb.tall {
+    aspect-ratio: 9 / 16;
+  }
+}
+
