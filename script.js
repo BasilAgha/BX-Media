@@ -1,18 +1,18 @@
 document.addEventListener('DOMContentLoaded', () => {
   // === HERO VIDEO AUTOPLAY FIX (For iOS Safari & Mobile) ===
   const heroVideo = document.querySelector('.hero-video');
-  if (heroVideo) {
-    heroVideo.muted = true;
-    heroVideo.playsInline = true;
-    heroVideo.autoplay = true;
-    heroVideo.loop = true;
+if (heroVideo) {
+  heroVideo.muted = true;
+  heroVideo.playsInline = true;
+  heroVideo.autoplay = true;
+  heroVideo.loop = true;
 
-    heroVideo.play().catch(() => {
-      console.log('Autoplay blocked, forcing playback...');
-      heroVideo.muted = true;
-      heroVideo.play();
-    });
-  }
+  heroVideo.play().catch(() => {
+    console.log("Autoplay blocked, forcing playback...");
+    heroVideo.muted = true;
+    heroVideo.play();
+  });
+}
 
   // === FADE-IN ANIMATION ===
   const elements = document.querySelectorAll('.fade-in');
@@ -95,87 +95,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const projectsGrid = document.getElementById("projectsGrid");
 
-  if (projectsGrid) {
-    projectData.forEach(project => {
-      const card = document.createElement("div");
-      card.className = "project-card";
-      card.innerHTML = `
-        <div class="project-image">
-          <img src="${project.image}" alt="${project.title}" />
+  projectData.forEach(project => {
+    const card = document.createElement("div");
+    card.className = "project-card";
+    card.innerHTML = `
+      <div class="project-image">
+        <img src="${project.image}" alt="${project.title}" />
+      </div>
+      <div class="project-info">
+        <h3>${project.title}</h3>
+        <a href="#services" class="project-category">${project.category}</a>
+        <div class="project-details">
+          <p><strong>Client:</strong> ${project.client}</p>
+          <p><strong>Location:</strong> ${project.location}</p>
         </div>
-        <div class="project-info">
-          <h3>${project.title}</h3>
-          <a href="#services" class="project-category">${project.category}</a>
-          <div class="project-details">
-            <p><strong>Client:</strong> ${project.client}</p>
-            <p><strong>Location:</strong> ${project.location}</p>
-          </div>
-          <a href="project-details.html?id=${project.id}" class="project-btn">View Project</a>
-        </div>
-      `;
-      projectsGrid.appendChild(card);
-    });
-  }
-
-  // === SCROLL STORYTELLING ===
-  const storySection = document.querySelector('.scroll-story');
-  if (storySection) {
-    const steps = storySection.querySelectorAll('.story-step');
-    const mediaEl = storySection.querySelector('.story-visual-media');
-    const titleEl = storySection.querySelector('#storyTitle');
-    const descriptionEl = storySection.querySelector('#storyDescription');
-    let mediaAnimationTimeout = null;
-
-    const setActiveStep = (step) => {
-      if (!step) return;
-
-      steps.forEach(item => {
-        item.classList.toggle('is-active', item === step);
-      });
-
-      const { media, title, description } = step.dataset;
-
-      if (media && mediaEl) {
-        mediaEl.style.backgroundImage = `url('${media}')`;
-        mediaEl.classList.add('is-animating');
-        if (mediaAnimationTimeout) {
-          clearTimeout(mediaAnimationTimeout);
-        }
-        mediaAnimationTimeout = window.setTimeout(() => {
-          mediaEl.classList.remove('is-animating');
-        }, 700);
-      }
-
-      if (title && titleEl) {
-        titleEl.textContent = title;
-      }
-
-      if (description && descriptionEl) {
-        descriptionEl.textContent = description;
-      }
-    };
-
-    if (steps.length) {
-      setActiveStep(steps[0]);
-
-      const storyObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            setActiveStep(entry.target);
-          }
-        });
-      }, {
-        rootMargin: '-35% 0px -35% 0px',
-        threshold: 0.4
-      });
-
-      steps.forEach(step => {
-        storyObserver.observe(step);
-
-        step.addEventListener('mouseenter', () => setActiveStep(step));
-        step.addEventListener('focus', () => setActiveStep(step));
-      });
-    }
-  }
+        <a href="project-details.html?id=${project.id}" class="project-btn">View Project</a>
+      </div>
+    `;
+    projectsGrid.appendChild(card);
+  });
 });
-
