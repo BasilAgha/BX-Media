@@ -30,13 +30,61 @@ if (heroVideo) {
     observer.observe(el);
   });
 
+  // === ENHANCED REVEAL ANIMATION FOR CARDS & CONTENT ===
+  const revealObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
+        entry.target.classList.remove('is-hidden');
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.2, rootMargin: '0px 0px -10% 0px' });
+
+  const prepareReveal = element => {
+    if (!element || element.classList.contains('reveal-prepared')) return;
+    element.classList.add('reveal-prepared', 'is-hidden');
+    revealObserver.observe(element);
+  };
+
+  document.querySelectorAll('.reveal-on-scroll').forEach(prepareReveal);
+
+  // === SCROLL PROGRESS BAR ===
+  const progressBar = document.querySelector('.scroll-progress .progress-bar');
+  const updateProgress = () => {
+    if (!progressBar) return;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const progress = docHeight > 0 ? (window.scrollY / docHeight) * 100 : 0;
+    progressBar.style.width = `${progress}%`;
+  };
+
+  updateProgress();
+  window.addEventListener('scroll', updateProgress);
+  window.addEventListener('resize', updateProgress);
+
+  // === NAVBAR STATE ON SCROLL ===
+  const navbar = document.querySelector('.navbar');
+  const toggleNavbarState = () => {
+    if (!navbar) return;
+    if (window.scrollY > 20) {
+      navbar.classList.add('scrolled');
+    } else {
+      navbar.classList.remove('scrolled');
+    }
+  };
+
+  toggleNavbarState();
+  window.addEventListener('scroll', toggleNavbarState);
+
   // === MOBILE MENU TOGGLE ===
   const hamburger = document.querySelector('.hamburger');
   const navMenu = document.querySelector('.nav-menu');
-  hamburger.addEventListener('click', () => {
-    hamburger.classList.toggle('active');
-    navMenu.classList.toggle('active');
-  });
+  if (hamburger && navMenu) {
+    hamburger.addEventListener('click', () => {
+      hamburger.classList.toggle('active');
+      navMenu.classList.toggle('active');
+    });
+  }
 
   // === DYNAMIC PROJECTS ===
   const projectData = [
@@ -97,7 +145,7 @@ if (heroVideo) {
 
   projectData.forEach(project => {
     const card = document.createElement("div");
-    card.className = "project-card";
+    card.classList.add('project-card', 'reveal-on-scroll');
     card.innerHTML = `
       <div class="project-image">
         <img src="${project.image}" alt="${project.title}" />
@@ -113,5 +161,6 @@ if (heroVideo) {
       </div>
     `;
     projectsGrid.appendChild(card);
+    prepareReveal(card);
   });
 });
