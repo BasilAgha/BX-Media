@@ -164,3 +164,6 @@ if (heroVideo) {
     prepareReveal(card);
   });
 });
+document.querySelectorAll('.approach-step').forEach((step, i) => {
+  step.style.transitionDelay = `${i * 0.15}s`;
+});
