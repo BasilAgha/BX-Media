@@ -817,6 +817,67 @@ section {
   .slide-content p {
     font-size: 1rem;
   }
+
+  .metrics {
+    padding: 80px 0 60px;
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .approach-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .approach-step {
+    padding: 24px;
+  }
+
+  .testimonials-carousel {
+    grid-template-columns: 1fr;
+  }
+
+  .carousel-control {
+    display: none;
+  }
+
+  .cta-banner .container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cta-actions {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .metric-card {
+    padding: 24px;
+  }
+
+  .metric-value {
+    font-size: 2.3rem;
+  }
+
+  .approach-step {
+    padding: 22px;
+  }
+
+  .testimonial-card {
+    padding: 32px 28px;
+  }
+
+  .cta-content h2 {
+    font-size: 1.8rem;
+  }
+
+  .cta-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 /* ===== Project Details: Clean, centered video layout (CSS-only) ===== */
