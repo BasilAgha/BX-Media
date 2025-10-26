@@ -1292,3 +1292,134 @@ section {
     aspect-ratio: 9 / 16;
   }
 }
+/* ===== Signature Methodology (Approach) — Enhanced ===== */
+.approach {
+  background: radial-gradient(circle at 10% 0%, rgba(255,102,0,0.06), transparent 55%), #0f0f0f;
+  padding: 100px 0;
+  position: relative;
+  overflow: clip;
+}
+
+.approach::before,
+.approach::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(600px 200px at 85% 10%, rgba(255,145,77,0.08), transparent 60%),
+    radial-gradient(400px 160px at 10% 90%, rgba(255,102,0,0.06), transparent 60%);
+  filter: blur(2px);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.approach .section-header { position: relative; z-index: 1; }
+.approach-intro {
+  color: #cfcfcf;
+  max-width: 740px;
+  margin: 0 auto 2.5rem;
+  font-size: 1.08rem;
+  line-height: 1.75;
+  opacity: 0.9;
+}
+
+.approach-steps {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px;
+}
+
+@media (max-width: 1024px) {
+  .approach-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .approach-steps { grid-template-columns: 1fr; }
+}
+
+/* Card */
+.approach-step {
+  position: relative;
+  background: linear-gradient(180deg, rgba(22,22,22,0.9), rgba(14,14,14,0.9));
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 20px;
+  padding: 1.75rem 1.5rem 1.6rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  box-shadow: 0 24px 48px rgba(0,0,0,0.35);
+  transition: transform .45s var(--ease-out), box-shadow .4s ease, border-color .35s ease;
+  transform-style: preserve-3d;
+}
+
+.approach-step::before {
+  /* subtle corner glow */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(500px 220px at 110% -10%, rgba(255,102,0,0.18), transparent 60%);
+  opacity: 0;
+  transition: opacity .35s ease;
+  pointer-events: none;
+}
+
+.approach-step:hover {
+  transform: translateY(-10px) perspective(800px) rotateX(1deg);
+  border-color: rgba(255,102,0,0.18);
+  box-shadow: 0 40px 80px rgba(255,102,0,0.18);
+}
+.approach-step:hover::before { opacity: 1; }
+
+.approach-step h3 {
+  color: #fff;
+  font-weight: 600;
+  margin: 0.5rem 0 0.6rem;
+  letter-spacing: .2px;
+}
+
+.approach-step p { color: #c9c9c9; }
+
+/* Index badge (01–04) */
+.step-index {
+  --size: 46px;
+  width: var(--size);
+  height: var(--size);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #fff;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-soft) 100%);
+  box-shadow: 0 10px 22px rgba(255,102,0,0.28);
+  border: 1px solid var(--border-glow);
+  isolation: isolate;
+}
+
+/* Optional icon chip (if you add .step-icon inside the card) */
+.step-icon {
+  width: 64px; height: 64px;
+  border-radius: 18px;
+  display: grid; place-items: center;
+  margin: .25rem 0 .9rem;
+  color: #fff;
+  background: rgba(255,102,0,0.14);
+  border: 1px solid rgba(255,102,0,0.28);
+  box-shadow: inset 0 0 22px rgba(255,102,0,0.15);
+  font-size: 1.35rem;
+  animation: stepPulse 4s ease-in-out infinite;
+}
+
+@keyframes stepPulse {
+  0%,100% { box-shadow: inset 0 0 18px rgba(255,102,0,0.16); transform: translateZ(0); }
+  50%     { box-shadow: inset 0 0 28px rgba(255,145,77,0.25); transform: translateZ(6px); }
+}
+
+/* Staggered entrance (works with your .reveal-on-scroll) */
+.approach-step.is-hidden { transform: translateY(40px) scale(.98); opacity: 0; }
+.approach-step.is-visible { transform: translateY(0) scale(1); opacity: 1; }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .approach-step, .step-icon { animation: none !important; transition: none !important; }
+}
