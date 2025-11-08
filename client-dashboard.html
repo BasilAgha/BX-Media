@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Client Dashboard | BX Media</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="dashboard.css" />
+  </head>
+  <body class="dashboard-body">
+    <div class="dashboard-shell">
+      <aside class="dashboard-sidebar">
+        <div class="dashboard-logo">
+          <img src="favicon.ico" alt="BX Media Logo" />
+          <span>BX Media</span>
+        </div>
+        <nav class="dashboard-nav">
+          <a href="index.html">← Back to site</a>
+          <button type="button" id="clientLogout" class="secondary-btn" style="display: none">
+            Log out
+          </button>
+        </nav>
+      </aside>
+      <main class="dashboard-content">
+        <section class="dashboard-panel" id="clientLoginView">
+          <h1>Client access</h1>
+          <p class="helper-text">
+            Sign in with the credentials shared by your BX Media account manager to
+            view real-time progress for your active projects.
+          </p>
+          <div class="alert error" id="clientLoginError">Invalid email or password. Please try again.</div>
+          <form class="form-grid" id="clientLoginForm">
+            <div class="form-row">
+              <label for="clientEmail">Email address</label>
+              <input
+                type="email"
+                id="clientEmail"
+                name="email"
+                autocomplete="email"
+                placeholder="you@company.com"
+                required
+              />
+            </div>
+            <div class="form-row">
+              <label for="clientPassword">Password</label>
+              <input
+                type="password"
+                id="clientPassword"
+                name="password"
+                autocomplete="current-password"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            <button type="submit" class="primary-btn">Access dashboard</button>
+          </form>
+        </section>
+
+        <section class="dashboard-panel" id="clientDashboard" style="display: none">
+          <header style="display: flex; justify-content: space-between; align-items: center; gap: 1rem">
+            <div>
+              <h1 id="clientGreeting">Welcome back!</h1>
+              <p class="helper-text" id="clientSubtitle">Here is the latest on your active projects.</p>
+            </div>
+            <div>
+              <button type="button" id="clientLogoutTop" class="secondary-btn">Log out</button>
+            </div>
+          </header>
+
+          <section class="task-summary" id="clientSummary"></section>
+
+          <section class="project-overview" id="clientProjectOverview"></section>
+
+          <div id="clientTasks"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="dashboard.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        window.BXDashboard?.initClientPage();
+      });
+    </script>
+  </body>
+</html>
