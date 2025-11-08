@@ -70,58 +70,6 @@
               </div>
             </div>
 
-            <div id="projectMetaPanel" class="project-overview-panel" style="display: none">
-              <h3>Project overview</h3>
-              <form class="form-grid" id="projectMetaForm">
-                <div class="form-row">
-                  <label for="projectStartDate">Project start</label>
-                  <input type="date" id="projectStartDate" name="startDate" />
-                </div>
-                <div class="form-row">
-                  <label for="projectEndDate">Projected completion</label>
-                  <input type="date" id="projectEndDate" name="endDate" />
-                </div>
-                <div class="form-row">
-                  <label for="projectContractUrl">Contract link</label>
-                  <input
-                    type="url"
-                    id="projectContractUrl"
-                    name="contractUrl"
-                    placeholder="https://drive.google.com/..."
-                  />
-                </div>
-                <div class="form-row" style="align-self: flex-end">
-                  <button type="submit" class="secondary-btn">Save project info</button>
-                </div>
-              </form>
-
-              <div class="deliverable-section">
-                <div class="deliverable-header">
-                  <h4>Final deliverables</h4>
-                  <form class="deliverable-form" id="deliverableForm">
-                    <input
-                      type="text"
-                      id="deliverableTitle"
-                      name="title"
-                      placeholder="Deliverable name"
-                      required
-                    />
-                    <input
-                      type="url"
-                      id="deliverableUrl"
-                      name="url"
-                      placeholder="https://drive.google.com/..."
-                      required
-                    />
-                    <button type="submit" class="primary-btn">Add link</button>
-                  </form>
-                </div>
-                <ul id="deliverableList" class="deliverable-list"></ul>
-              </div>
-
-              <div class="alert success" id="projectMetaSuccess">Project details saved.</div>
-            </div>
-
             <form class="form-grid" id="newTaskForm">
               <div class="form-row">
                 <label for="taskTitle">Task title</label>
@@ -156,10 +104,6 @@
                   value="25"
                   required
                 />
-              </div>
-              <div class="form-row">
-                <label for="taskStartDate">Start date</label>
-                <input type="date" id="taskStartDate" name="startDate" required />
               </div>
               <div class="form-row">
                 <label for="taskDueDate">Target date</label>

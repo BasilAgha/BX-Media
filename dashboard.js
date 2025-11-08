@@ -13,23 +13,6 @@
       name: 'Zeetex Tyres',
       email: 'zeetex@partner.com',
       password: 'zeetex2024',
-      projectInfo: {
-        startDate: '2024-05-06',
-        endDate: '2024-08-23',
-        contractUrl: 'https://drive.google.com/zeetex-2024-contract',
-        deliverables: [
-          {
-            id: 'del-001',
-            title: 'Creative asset folder',
-            url: 'https://drive.google.com/zeetex-q3-assets',
-          },
-          {
-            id: 'del-002',
-            title: 'Performance dashboard',
-            url: 'https://datastudio.google.com/performance-zeetex',
-          },
-        ],
-      },
       tasks: [
         {
           id: 'task-001',
@@ -37,7 +20,6 @@
           description: 'Launch paid campaigns across UAE & Saudi with localized messaging and remarketing.',
           status: 'in-progress',
           progress: 55,
-          startDate: '2024-05-13',
           dueDate: '2024-08-12',
           updatedAt: '2024-07-02T09:00:00Z',
         },
@@ -47,7 +29,6 @@
           description: 'Deliver fresh lifestyle visuals for the Q3 automotive storyboards.',
           status: 'completed',
           progress: 100,
-          startDate: '2024-04-22',
           dueDate: '2024-06-14',
           updatedAt: '2024-06-14T14:30:00Z',
         },
@@ -58,18 +39,6 @@
       name: 'Titanium Auto',
       email: 'projects@titaniumauto.com',
       password: 'titanium2024',
-      projectInfo: {
-        startDate: '2024-04-01',
-        endDate: '2024-07-30',
-        contractUrl: 'https://drive.google.com/titanium-master-services',
-        deliverables: [
-          {
-            id: 'del-003',
-            title: 'Launch teaser edits',
-            url: 'https://drive.google.com/titanium-teaser-v1',
-          },
-        ],
-      },
       tasks: [
         {
           id: 'task-003',
@@ -77,7 +46,6 @@
           description: 'Storyboard, shoot, and edit teaser clips for the upcoming dealership reveal.',
           status: 'in-progress',
           progress: 40,
-          startDate: '2024-05-10',
           dueDate: '2024-07-22',
           updatedAt: '2024-06-29T18:45:00Z',
         },
@@ -87,7 +55,6 @@
           description: 'Capture client testimonials to highlight the Titanium Auto experience.',
           status: 'not-started',
           progress: 0,
-          startDate: '2024-07-08',
           dueDate: '2024-08-05',
           updatedAt: '2024-06-20T12:10:00Z',
         },
@@ -103,37 +70,6 @@
   };
 
   const STATUS_ORDER = ['not-started', 'in-progress', 'blocked', 'completed'];
-
-  function normalizeProjectInfo(info) {
-    const base = {
-      startDate: '',
-      endDate: '',
-      contractUrl: '',
-      deliverables: [],
-    };
-
-    if (!info || typeof info !== 'object') {
-      return { ...base };
-    }
-
-    return {
-      ...base,
-      ...info,
-      deliverables: Array.isArray(info.deliverables)
-        ? info.deliverables
-            .filter((item) => item && (item.title || item.url))
-            .map((item, index) => ({
-              id: item.id || `deliverable-${index}`,
-              title: item.title || 'Untitled deliverable',
-              url: item.url || '',
-            }))
-        : [],
-    };
-  }
-
-  function getProjectInfo(client) {
-    return normalizeProjectInfo(client?.projectInfo);
-  }
 
   function ensureDefaultData() {
     if (!window.localStorage) {
@@ -266,7 +202,6 @@
           <th>Description</th>
           <th>Progress</th>
           <th>Status</th>
-          <th>Start date</th>
           <th>Target date</th>
           <th>Last updated</th>
         </tr>
@@ -290,7 +225,6 @@
             </div>
           </td>
           <td><span class="badge ${task.status}">${STATUS_LABELS[task.status] || task.status}</span></td>
-          <td>${formatDate(task.startDate)}</td>
           <td>${formatDate(task.dueDate)}</td>
           <td>${formatDateTime(task.updatedAt)}</td>
         `;
@@ -305,56 +239,6 @@
     if (!container) return;
     container.innerHTML = '';
     container.appendChild(createTaskTable(tasks));
-  }
-
-  function renderClientProjectOverview(container, projectInfo) {
-    if (!container) return;
-    const info = normalizeProjectInfo(projectInfo);
-
-    const contractHtml = info.contractUrl
-      ? `<a href="${info.contractUrl}" target="_blank" rel="noopener noreferrer">View signed agreement</a>`
-      : '<span class="helper-text">Contract link will appear here once shared.</span>';
-
-    const deliverableHtml = info.deliverables.length
-      ? `<ul class="overview-deliverables">${info.deliverables
-          .map((item) => {
-            const label = item.title || 'Deliverable';
-            if (item.url) {
-              return `<li><a href="${item.url}" target="_blank" rel="noopener noreferrer">${label}</a></li>`;
-            }
-            return `<li><span>${label}</span></li>`;
-          })
-          .join('')}</ul>`
-      : '<span class="helper-text">Final deliverables will be listed here.</span>';
-
-    container.innerHTML = `
-      <div class="overview-grid">
-        <div class="overview-card">
-          <h2>Project timeline</h2>
-          <div class="timeline-card">
-            <div class="timeline-item">
-              <span>Project start</span>
-              <strong>${formatDate(info.startDate)}</strong>
-            </div>
-            <div class="timeline-item">
-              <span>Projected completion</span>
-              <strong>${formatDate(info.endDate)}</strong>
-            </div>
-          </div>
-        </div>
-        <div class="overview-card">
-          <h2>Key resources</h2>
-          <div class="resource-block">
-            <h3>Contract</h3>
-            ${contractHtml}
-          </div>
-          <div class="resource-block">
-            <h3>Final deliverables</h3>
-            ${deliverableHtml}
-          </div>
-        </div>
-      </div>
-    `;
   }
 
   function setVisibility(element, visible) {
@@ -394,7 +278,6 @@
     const loginError = document.getElementById('clientLoginError');
     const summaryContainer = document.getElementById('clientSummary');
     const tasksContainer = document.getElementById('clientTasks');
-    const projectOverview = document.getElementById('clientProjectOverview');
     const greeting = document.getElementById('clientGreeting');
     const subtitle = document.getElementById('clientSubtitle');
     const logoutButtons = [
@@ -427,7 +310,6 @@
 
       renderSummary(summaryContainer, computeSummary(latestClient.tasks || []));
       renderClientTasks(tasksContainer, latestClient.tasks || []);
-      renderClientProjectOverview(projectOverview, latestClient.projectInfo);
       handleClientLogin(latestClient);
     }
 
@@ -488,10 +370,6 @@
       updatedAt: new Date().toISOString(),
     };
 
-    if (!newTask.startDate && newTask.dueDate) {
-      newTask.startDate = newTask.dueDate;
-    }
-
     target.tasks = Array.isArray(target.tasks) ? target.tasks : [];
     target.tasks.unshift(newTask);
     saveClients(clients);
@@ -507,65 +385,8 @@
     if (!task) return null;
 
     Object.assign(task, updates, { updatedAt: new Date().toISOString() });
-    if (!task.startDate && task.dueDate) {
-      task.startDate = task.dueDate;
-    }
     saveClients(clients);
     return task;
-  }
-
-  function updateClientProjectInfo(clientId, updates) {
-    const clients = loadClients();
-    const target = clients.find((client) => client.id === clientId);
-    if (!target) return null;
-
-    const current = getProjectInfo(target);
-    const next = {
-      ...current,
-      ...updates,
-    };
-
-    next.deliverables = Array.isArray(next.deliverables)
-      ? next.deliverables.map((item, index) => ({
-          id: item.id || `deliverable-${index}`,
-          title: item.title,
-          url: item.url,
-        }))
-      : [];
-
-    target.projectInfo = next;
-    saveClients(clients);
-    return next;
-  }
-
-  function addDeliverableToClient(clientId, deliverable) {
-    const clients = loadClients();
-    const target = clients.find((client) => client.id === clientId);
-    if (!target) return null;
-
-    const info = getProjectInfo(target);
-    const newDeliverable = {
-      ...deliverable,
-      id: deliverable.id || `del-${Date.now()}`,
-    };
-
-    info.deliverables = Array.isArray(info.deliverables) ? info.deliverables.slice() : [];
-    info.deliverables.unshift(newDeliverable);
-    target.projectInfo = info;
-    saveClients(clients);
-    return newDeliverable;
-  }
-
-  function removeDeliverableFromClient(clientId, deliverableId) {
-    const clients = loadClients();
-    const target = clients.find((client) => client.id === clientId);
-    if (!target) return null;
-
-    const info = getProjectInfo(target);
-    info.deliverables = info.deliverables.filter((item) => item.id !== deliverableId);
-    target.projectInfo = info;
-    saveClients(clients);
-    return info.deliverables.slice();
   }
 
   function renderAdminTaskList(container, client) {
@@ -625,10 +446,6 @@
               </div>
             </div>
             <div class="form-row">
-              <label>Start date</label>
-              <input type="date" value="${task.startDate ? task.startDate : ''}" class="admin-start-date" />
-            </div>
-            <div class="form-row">
               <label>Target date</label>
               <input type="date" value="${task.dueDate ? task.dueDate : ''}" class="admin-due-date" />
             </div>
@@ -642,72 +459,6 @@
       });
   }
 
-  function renderDeliverableList(listElement, deliverables) {
-    if (!listElement) return;
-    listElement.innerHTML = '';
-
-    if (!deliverables || !deliverables.length) {
-      const empty = document.createElement('li');
-      empty.className = 'deliverable-empty';
-      empty.textContent = 'No deliverables shared yet.';
-      listElement.appendChild(empty);
-      return;
-    }
-
-    deliverables.forEach((item) => {
-      const listItem = document.createElement('li');
-      listItem.className = 'deliverable-item';
-      listItem.dataset.deliverableId = item.id;
-      listItem.innerHTML = `
-        <a href="${item.url}" target="_blank" rel="noopener noreferrer">${item.title}</a>
-        <button type="button" class="link-btn deliverable-remove" data-deliverable-id="${item.id}">Remove</button>
-      `;
-      listElement.appendChild(listItem);
-    });
-  }
-
-  function renderProjectMeta(panelElement, client) {
-    if (!panelElement) return;
-    const form = panelElement.querySelector('#projectMetaForm');
-    const deliverableList = panelElement.querySelector('#deliverableList');
-    const deliverableForm = panelElement.querySelector('#deliverableForm');
-
-    if (!client) {
-      panelElement.style.display = 'none';
-      if (form) {
-        form.reset();
-        form.dataset.clientId = '';
-      }
-      if (deliverableForm) {
-        deliverableForm.reset();
-        deliverableForm.dataset.clientId = '';
-      }
-      if (deliverableList) deliverableList.innerHTML = '';
-      return;
-    }
-
-    panelElement.style.display = '';
-    const info = getProjectInfo(client);
-
-    if (form) {
-      form.dataset.clientId = client.id;
-      const startInput = form.querySelector('#projectStartDate');
-      const endInput = form.querySelector('#projectEndDate');
-      const contractInput = form.querySelector('#projectContractUrl');
-
-      if (startInput) startInput.value = info.startDate || '';
-      if (endInput) endInput.value = info.endDate || '';
-      if (contractInput) contractInput.value = info.contractUrl || '';
-    }
-
-    if (deliverableForm) {
-      deliverableForm.dataset.clientId = client.id;
-      deliverableForm.reset();
-    }
-
-    renderDeliverableList(deliverableList, info.deliverables);
-  }
-
   function initAdminPage() {
     const clients = loadClients();
     const loginView = document.getElementById('adminLoginView');
@@ -718,11 +469,6 @@
     const taskForm = document.getElementById('newTaskForm');
     const successAlert = document.getElementById('taskSuccess');
     const taskList = document.getElementById('adminTaskList');
-    const projectMetaPanel = document.getElementById('projectMetaPanel');
-    const projectMetaForm = document.getElementById('projectMetaForm');
-    const projectMetaSuccess = document.getElementById('projectMetaSuccess');
-    const deliverableForm = document.getElementById('deliverableForm');
-    const deliverableList = document.getElementById('deliverableList');
     const logoutButtons = [document.getElementById('adminLogout'), document.getElementById('adminLogoutTop')].filter(
       Boolean,
     );
@@ -736,8 +482,6 @@
         setVisibility(loginView, true);
         logoutButtons.forEach((btn) => (btn.style.display = 'none'));
         showAlert(successAlert, false);
-        showAlert(projectMetaSuccess, false);
-        renderProjectMeta(projectMetaPanel, null);
         if (loginForm) loginForm.reset();
       });
     });
@@ -749,10 +493,6 @@
       if (clientSelect && !clientSelect.value) {
         clientSelect.selectedIndex = 0;
       }
-      const activeClient = clientSelect && clientSelect.value ? getClientById(clientSelect.value) : null;
-      renderProjectMeta(projectMetaPanel, activeClient);
-      showAlert(projectMetaSuccess, false);
-      showAlert(successAlert, false);
     }
 
     if (sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true') {
@@ -783,8 +523,6 @@
         const selectedClient = getClientById(event.target.value);
         renderAdminTaskList(taskList, selectedClient);
         showAlert(successAlert, false);
-        showAlert(projectMetaSuccess, false);
-        renderProjectMeta(projectMetaPanel, selectedClient);
       });
     }
 
@@ -798,7 +536,6 @@
           description: formData.get('description'),
           status: formData.get('status'),
           progress: Math.min(100, Math.max(0, Number(formData.get('progress') || 0))),
-          startDate: formData.get('startDate') || '',
           dueDate: formData.get('dueDate') || '',
         };
 
@@ -809,61 +546,6 @@
         taskForm.querySelector('#taskStatus').value = 'in-progress';
         taskForm.querySelector('#taskProgress').value = 25;
         showAlert(successAlert, true);
-        renderProjectMeta(projectMetaPanel, updatedClient);
-      });
-    }
-
-    if (projectMetaForm) {
-      projectMetaForm.addEventListener('submit', (event) => {
-        event.preventDefault();
-        const clientId = projectMetaForm.dataset.clientId;
-        if (!clientId) return;
-
-        const formData = new FormData(projectMetaForm);
-        updateClientProjectInfo(clientId, {
-          startDate: formData.get('startDate') || '',
-          endDate: formData.get('endDate') || '',
-          contractUrl: formData.get('contractUrl') || '',
-        });
-
-        const updatedClient = getClientById(clientId);
-        renderProjectMeta(projectMetaPanel, updatedClient);
-        renderAdminTaskList(taskList, updatedClient);
-        showAlert(projectMetaSuccess, true);
-      });
-    }
-
-    if (deliverableForm && deliverableList) {
-      deliverableForm.addEventListener('submit', (event) => {
-        event.preventDefault();
-        const clientId = deliverableForm.dataset.clientId;
-        if (!clientId) return;
-
-        const formData = new FormData(deliverableForm);
-        const title = (formData.get('title') || '').toString().trim();
-        const url = (formData.get('url') || '').toString().trim();
-        if (!title || !url) return;
-
-        addDeliverableToClient(clientId, { title, url });
-        const updatedClient = getClientById(clientId);
-        renderProjectMeta(projectMetaPanel, updatedClient);
-        deliverableForm.reset();
-        showAlert(projectMetaSuccess, true);
-      });
-
-      deliverableList.addEventListener('click', (event) => {
-        const button = event.target.closest('.deliverable-remove');
-        if (!button) return;
-        const fallbackClientId = projectMetaForm ? projectMetaForm.dataset.clientId : '';
-        const clientId = deliverableForm.dataset.clientId || fallbackClientId;
-        if (!clientId) return;
-        const deliverableId = button.dataset.deliverableId;
-        if (!deliverableId) return;
-
-        removeDeliverableFromClient(clientId, deliverableId);
-        const updatedClient = getClientById(clientId);
-        renderProjectMeta(projectMetaPanel, updatedClient);
-        showAlert(projectMetaSuccess, true);
       });
     }
 
@@ -886,19 +568,16 @@
         const taskId = card.dataset.taskId;
         const status = card.querySelector('.admin-status')?.value || 'in-progress';
         const progress = Number(card.querySelector('.admin-progress')?.value || 0);
-        const startDate = card.querySelector('.admin-start-date')?.value || '';
         const dueDate = card.querySelector('.admin-due-date')?.value || '';
 
         updateTaskOnClient(clientSelect.value, taskId, {
           status,
           progress: Math.min(100, Math.max(0, progress)),
-          startDate,
           dueDate,
         });
 
         const updatedClient = getClientById(clientSelect.value);
         renderAdminTaskList(taskList, updatedClient);
-        renderProjectMeta(projectMetaPanel, updatedClient);
         showAlert(successAlert, true);
       });
     }
