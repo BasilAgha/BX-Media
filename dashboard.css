@@ -180,6 +180,20 @@ body.dashboard-body {
   background: rgba(148, 163, 184, 0.25);
 }
 
+.secondary-btn.active {
+  background: rgba(148, 163, 184, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+.danger-btn {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fecaca;
+}
+
+.danger-btn:hover {
+  background: rgba(239, 68, 68, 0.28);
+}
+
 .helper-text {
   font-size: 0.85rem;
   color: var(--dashboard-muted);
@@ -424,4 +438,71 @@ progress::-moz-progress-bar {
     display: block;
     overflow-x: auto;
   }
+}
+
+/* --- Projects: cards, timelines, comments --- */
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.project-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  padding: 1rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.project-card header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.project-meta {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.project-meta .progress-wrapper progress {
+  width: 100%;
+}
+
+.timeline {
+  margin-top: 0.25rem;
+  padding-left: 1rem;
+  border-left: 2px solid rgba(255, 255, 255, 0.08);
+  display: grid;
+  gap: 0.35rem;
+}
+
+.timeline-item {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.timeline-item small {
+  color: var(--dashboard-muted);
+}
+
+.comment-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.comment-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.75rem;
+}
+
+.comment-item small {
+  display: block;
+  color: var(--dashboard-muted);
+  margin-top: 0.25rem;
 }
