@@ -57,6 +57,13 @@
                 required
               />
             </div>
+            <div class="form-row">
+              <label for="loginRole">Sign in as</label>
+              <select id="loginRole" name="role" required>
+                <option value="client" selected>Client</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
             <button type="submit" class="primary-btn">Access dashboard</button>
           </form>
         </section>
@@ -74,6 +81,7 @@
 
           <section class="task-summary" id="clientSummary"></section>
 
+          <div id="clientProjects" class="project-grid"></div>
           <div id="clientTasks"></div>
         </section>
       </main>
