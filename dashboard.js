@@ -1,66 +1,11 @@
 (function () {
   const STORAGE_KEY = 'bxMediaClients';
+  const ADMINS_KEY = 'bxMediaAdmins';
   const CLIENT_SESSION_KEY = 'bxMediaActiveClient';
   const ADMIN_SESSION_KEY = 'bxMediaAdminActive';
-  const ADMIN_CREDENTIALS = {
-    email: 'admin@bxmedia.com',
-    password: 'createimpact',
-  };
 
-  const DEFAULT_CLIENTS = [
-    {
-      id: 'client-001',
-      name: 'Zeetex Tyres',
-      email: 'zeetex@partner.com',
-      password: 'zeetex2024',
-      tasks: [
-        {
-          id: 'task-001',
-          title: 'Performance campaign roll-out',
-          description: 'Launch paid campaigns across UAE & Saudi with localized messaging and remarketing.',
-          status: 'in-progress',
-          progress: 55,
-          dueDate: '2024-08-12',
-          updatedAt: '2024-07-02T09:00:00Z',
-        },
-        {
-          id: 'task-002',
-          title: 'Creative production refresh',
-          description: 'Deliver fresh lifestyle visuals for the Q3 automotive storyboards.',
-          status: 'completed',
-          progress: 100,
-          dueDate: '2024-06-14',
-          updatedAt: '2024-06-14T14:30:00Z',
-        },
-      ],
-    },
-    {
-      id: 'client-002',
-      name: 'Titanium Auto',
-      email: 'projects@titaniumauto.com',
-      password: 'titanium2024',
-      tasks: [
-        {
-          id: 'task-003',
-          title: 'Showroom reveal teaser',
-          description: 'Storyboard, shoot, and edit teaser clips for the upcoming dealership reveal.',
-          status: 'in-progress',
-          progress: 40,
-          dueDate: '2024-07-22',
-          updatedAt: '2024-06-29T18:45:00Z',
-        },
-        {
-          id: 'task-004',
-          title: 'Owner testimonial series',
-          description: 'Capture client testimonials to highlight the Titanium Auto experience.',
-          status: 'not-started',
-          progress: 0,
-          dueDate: '2024-08-05',
-          updatedAt: '2024-06-20T12:10:00Z',
-        },
-      ],
-    },
-  ];
+  // Start empty; admins add clients via the console
+  const DEFAULT_CLIENTS = [];
 
   const STATUS_LABELS = {
     'not-started': 'Not started',
@@ -70,6 +15,15 @@
   };
 
   const STATUS_ORDER = ['not-started', 'in-progress', 'blocked', 'completed'];
+
+  // Crypto helper for password hashing
+  async function sha256(text) {
+    if (!window.crypto?.subtle) return text; // fallback for unsupported environments
+    const msgUint8 = new TextEncoder().encode(text);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
 
   function ensureDefaultData() {
     if (!window.localStorage) {
@@ -96,9 +50,41 @@
     return DEFAULT_CLIENTS.slice();
   }
 
+  function migrateClientsSchema(clients) {
+    let changed = false;
+    clients.forEach((client) => {
+      // Carry forward legacy plain password for admin visibility
+      if (client.password && !client.passwordPlain) {
+        client.passwordPlain = client.password;
+        changed = true;
+      }
+      if (Array.isArray(client.tasks) && !Array.isArray(client.projects)) {
+        client.projects = [
+          {
+            id: `project-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            name: 'General',
+            description: 'Migrated from legacy tasks',
+            status: 'in-progress',
+            progress: 0,
+            driveLink: '',
+            comments: [],
+            tasks: client.tasks.slice(),
+          },
+        ];
+        delete client.tasks;
+        changed = true;
+      }
+      if (!Array.isArray(client.projects)) client.projects = [];
+    });
+    if (changed) saveClients(clients);
+    return clients;
+  }
+
   function loadClients() {
     const data = ensureDefaultData();
-    return JSON.parse(JSON.stringify(data));
+    const migrated = migrateClientsSchema(data);
+    const cleaned = cleanupDemoClients(migrated);
+    return JSON.parse(JSON.stringify(cleaned));
   }
 
   function saveClients(clients) {
@@ -106,19 +92,72 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
   }
 
+  // Remove any legacy demo data that may still exist in localStorage
+  function cleanupDemoClients(clients) {
+    try {
+      const before = clients.length;
+      const blacklistEmails = new Set(['zeetex@partner.com', 'projects@titaniumauto.com']);
+      const filtered = clients.filter((c) => {
+        const email = (c.email || '').trim().toLowerCase();
+        const name = (c.name || '').trim().toLowerCase();
+        if (blacklistEmails.has(email)) return false;
+        if (name.includes('zeetex') || name.includes('titanium auto')) return false;
+        // Old demo entries stored plain passwords
+        if (typeof c.password === 'string' && c.password.length) return false;
+        return true;
+      });
+      if (filtered.length !== before) saveClients(filtered);
+      return filtered;
+    } catch (_) {
+      return clients;
+    }
+  }
+
+  function loadAdmins() {
+    if (!window.localStorage) return [];
+    try {
+      const raw = localStorage.getItem(ADMINS_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function saveAdmins(admins) {
+    if (!window.localStorage) return;
+    const list = Array.isArray(admins) ? admins.slice(0, 1) : [];
+    localStorage.setItem(ADMINS_KEY, JSON.stringify(list));
+  }
+
   function getClientById(id) {
     const clients = loadClients();
     return clients.find((client) => client.id === id) || null;
   }
 
-  function getClientByCredentials(email, password) {
+  async function getClientByCredentials(email, password) {
     const clients = loadClients();
     const normalizedEmail = (email || '').trim().toLowerCase();
-    return (
-      clients.find(
-        (client) => client.email.trim().toLowerCase() === normalizedEmail && client.password === password,
-      ) || null
-    );
+    const hash = await sha256(password || '');
+    const found = clients.find((client) => client.email?.trim().toLowerCase() === normalizedEmail);
+    if (!found) return null;
+    if (found.passwordHash) return found.passwordHash === hash ? found : null;
+    return found.password && found.password === password ? found : null;
+  }
+
+  async function isAdminCredentials(email, password) {
+    const admins = loadAdmins();
+    const normalizedEmail = (email || '').trim().toLowerCase();
+    const hash = await sha256(password || '');
+    return admins.some((a) => a.email?.trim().toLowerCase() === normalizedEmail && a.passwordHash === hash);
+  }
+
+  function getActiveProject(client, projectId) {
+    if (!client) return null;
+    if (!Array.isArray(client.projects) || client.projects.length === 0) return null;
+    if (!projectId) return client.projects[0];
+    return client.projects.find((p) => p.id === projectId) || client.projects[0];
   }
 
   function formatDate(dateString) {
@@ -241,6 +280,122 @@
     container.appendChild(createTaskTable(tasks));
   }
 
+  function projectStatusBadge(status) {
+    return `<span class="badge ${status}">${STATUS_LABELS[status] || status}</span>`;
+  }
+
+  function computeProjectProgress(project) {
+    if (!project || !Array.isArray(project.tasks) || project.tasks.length === 0) return 0;
+    const vals = project.tasks.map((t) => Math.max(0, Math.min(100, Number(t.progress || 0))));
+    const sum = vals.reduce((a, b) => a + b, 0);
+    return Math.round(sum / vals.length);
+  }
+
+  function setProjectProgressFromTasks(clientId, projectId) {
+    const clients = loadClients();
+    const c = clients.find((x) => x.id === clientId);
+    if (!c || !Array.isArray(c.projects)) return null;
+    const p = c.projects.find((pp) => pp.id === projectId);
+    if (!p) return null;
+    p.progress = computeProjectProgress(p);
+    saveClients(clients);
+    return p.progress;
+  }
+
+  function renderClientProjects(container, projects) {
+    if (!container) return;
+    container.innerHTML = '';
+    if (!Array.isArray(projects) || projects.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'task-empty';
+      empty.textContent = 'No projects yet. Your team will add updates soon.';
+      container.appendChild(empty);
+      return;
+    }
+
+    projects.forEach((project) => {
+      const card = document.createElement('article');
+      card.className = 'project-card';
+      const comments = Array.isArray(project.comments) ? project.comments.length : 0;
+
+      const computedProgress = computeProjectProgress(project);
+      card.innerHTML = `
+        <header>
+          <div>
+            <h3 style="margin:0">${project.name}</h3>
+            <p class="helper-text" style="margin:0">${project.description || ''}</p>
+          </div>
+          ${projectStatusBadge(project.status || 'in-progress')}
+        </header>
+        <div class="project-meta">
+          <div class="progress-wrapper">
+            <progress max="100" value="${computedProgress}"></progress>
+            <span>${computedProgress}%</span>
+          </div>
+          ${
+            project.driveLink
+              ? `<a href="${project.driveLink}" target="_blank" rel="noopener noreferrer" class="secondary-btn" style="width:max-content">Drive</a>`
+              : ''
+          }
+        </div>
+        <div>
+          <h4 style="margin:0.5rem 0 0.25rem">Timeline</h4>
+          <div class="timeline">
+            ${
+              (project.tasks || [])
+                .slice()
+                .sort((a, b) => new Date(a.dueDate || 0) - new Date(b.dueDate || 0))
+                .map(
+                  (t) => `
+                  <div class="timeline-item">
+                    <strong>${t.title}</strong>
+                    <small>${formatDate(t.dueDate)} • ${STATUS_LABELS[t.status] || t.status} • ${t.progress || 0}%</small>
+                  </div>`,
+                )
+                .join('') || '<div class="helper-text">No tasks scheduled.</div>'
+            }
+          </div>
+        </div>
+        <div class="helper-text">${comments} comment${comments === 1 ? '' : 's'}</div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function renderClientDirectory(container) {
+    if (!container) return;
+    const clients = loadClients();
+    if (!clients.length) {
+      container.innerHTML = '<div class="task-empty">No clients added yet.</div>';
+      return;
+    }
+    const table = document.createElement('table');
+    table.className = 'task-list';
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>Client</th>
+          <th>Email</th>
+          <th>Password</th>
+        </tr>
+      </thead>
+    `;
+    const tbody = document.createElement('tbody');
+    clients.forEach((c) => {
+      const row = document.createElement('tr');
+      const pwd = c.passwordPlain ? c.passwordPlain : '<span class="helper-text">Unavailable</span>';
+      row.innerHTML = `
+        <td><strong>${c.name || ''}</strong></td>
+        <td>${c.email || ''}</td>
+        <td>${pwd}</td>
+      `;
+      tbody.appendChild(row);
+    });
+    table.appendChild(tbody);
+    container.innerHTML = '';
+    container.appendChild(table);
+  }
+
   function setVisibility(element, visible) {
     if (!element) return;
     element.style.display = visible ? '' : 'none';
@@ -278,6 +433,7 @@
     const loginError = document.getElementById('clientLoginError');
     const summaryContainer = document.getElementById('clientSummary');
     const tasksContainer = document.getElementById('clientTasks');
+    const projectsContainer = document.getElementById('clientProjects');
     const greeting = document.getElementById('clientGreeting');
     const subtitle = document.getElementById('clientSubtitle');
     const logoutButtons = [
@@ -303,13 +459,19 @@
       logoutButtons.forEach((btn) => (btn.style.display = 'inline-flex'));
 
       greeting.textContent = `Welcome back, ${latestClient.name.split(' ')[0]}!`;
-      subtitle.textContent =
-        latestClient.tasks && latestClient.tasks.length
-          ? 'Here is the latest on your active projects.'
-          : 'We will add your first project update soon.';
+      const allTasks = (latestClient.projects || []).flatMap((p) => p.tasks || []);
+      subtitle.textContent = allTasks.length
+        ? 'Here is the latest on your active projects.'
+        : 'We will add your first project update soon.';
 
-      renderSummary(summaryContainer, computeSummary(latestClient.tasks || []));
-      renderClientTasks(tasksContainer, latestClient.tasks || []);
+      renderSummary(summaryContainer, computeSummary(allTasks));
+      if (projectsContainer) renderClientProjects(projectsContainer, latestClient.projects || []);
+      if (tasksContainer) {
+        tasksContainer.innerHTML = '';
+        if ((!latestClient.projects || latestClient.projects.length === 0) && Array.isArray(latestClient.tasks)) {
+          renderClientTasks(tasksContainer, latestClient.tasks || []);
+        }
+      }
       handleClientLogin(latestClient);
     }
 
@@ -324,18 +486,31 @@
     }
 
     if (loginForm) {
-      loginForm.addEventListener('submit', (event) => {
+      loginForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const formData = new FormData(loginForm);
         const email = formData.get('email');
         const password = formData.get('password');
-        const client = getClientByCredentials(email, password);
+        const role = formData.get('role') || 'client';
 
-        if (client) {
-          showAlert(loginError, false);
-          showClientDashboard(client);
-        } else {
-          showAlert(loginError, true);
+        if (role === 'admin') {
+          if (await isAdminCredentials(email, password)) {
+            handleAdminLogin();
+            window.location.href = 'admin-dashboard.html';
+          } else {
+            showAlert(loginError, true);
+          }
+          return;
+        }
+
+        if (role === 'client') {
+          const client = await getClientByCredentials(email, password);
+          if (client) {
+            showAlert(loginError, false);
+            showClientDashboard(client);
+          } else {
+            showAlert(loginError, true);
+          }
         }
       });
     }
@@ -389,7 +564,66 @@
     return task;
   }
 
-  function renderAdminTaskList(container, client) {
+  // Project-scoped task helpers
+  function addTaskToProject(clientId, projectId, task) {
+    const clients = loadClients();
+    const target = clients.find((client) => client.id === clientId);
+    if (!target || !Array.isArray(target.projects)) return null;
+    const project = target.projects.find((p) => p.id === projectId);
+    if (!project) return null;
+
+    const newTask = { id: `task-${Date.now()}`, updatedAt: new Date().toISOString(), ...task };
+    project.tasks = Array.isArray(project.tasks) ? project.tasks : [];
+    project.tasks.unshift(newTask);
+    project.progress = computeProjectProgress(project);
+    saveClients(clients);
+    return newTask;
+  }
+
+  function updateTaskOnProject(clientId, projectId, taskId, updates) {
+    const clients = loadClients();
+    const target = clients.find((client) => client.id === clientId);
+    if (!target || !Array.isArray(target.projects)) return null;
+    const project = target.projects.find((p) => p.id === projectId);
+    if (!project || !Array.isArray(project.tasks)) return null;
+    const task = project.tasks.find((t) => t.id === taskId);
+    if (!task) return null;
+    Object.assign(task, updates, { updatedAt: new Date().toISOString() });
+    project.progress = computeProjectProgress(project);
+    saveClients(clients);
+    return task;
+  }
+
+  // Delete helpers
+  function deleteClient(clientId) {
+    const clients = loadClients();
+    const next = clients.filter((c) => c.id !== clientId);
+    saveClients(next);
+    return true;
+  }
+
+  function deleteProjectFromClient(clientId, projectId) {
+    const clients = loadClients();
+    const target = clients.find((c) => c.id === clientId);
+    if (!target || !Array.isArray(target.projects)) return false;
+    target.projects = target.projects.filter((p) => p.id !== projectId);
+    saveClients(clients);
+    return true;
+  }
+
+  function deleteTaskFromProject(clientId, projectId, taskId) {
+    const clients = loadClients();
+    const target = clients.find((c) => c.id === clientId);
+    if (!target || !Array.isArray(target.projects)) return false;
+    const project = target.projects.find((p) => p.id === projectId);
+    if (!project || !Array.isArray(project.tasks)) return false;
+    project.tasks = project.tasks.filter((t) => t.id !== taskId);
+    project.progress = computeProjectProgress(project);
+    saveClients(clients);
+    return true;
+  }
+
+  function renderAdminTaskList(container, client, project) {
     if (!container) return;
     container.innerHTML = '';
 
@@ -401,7 +635,7 @@
       return;
     }
 
-    const tasks = Array.isArray(client.tasks) ? client.tasks.slice() : [];
+    const tasks = Array.isArray(project?.tasks) ? project.tasks.slice() : [];
     if (!tasks.length) {
       const empty = document.createElement('div');
       empty.className = 'task-empty';
@@ -451,6 +685,7 @@
             </div>
           </div>
           <div style="display: flex; justify-content: flex-end; gap: 0.75rem">
+            <button type="button" class="danger-btn admin-delete" data-task-id="${task.id}">Delete</button>
             <button type="button" class="secondary-btn admin-save" data-task-id="${task.id}">Save changes</button>
           </div>
         `;
@@ -465,15 +700,83 @@
     const dashboardView = document.getElementById('adminDashboard');
     const loginForm = document.getElementById('adminLoginForm');
     const loginError = document.getElementById('adminLoginError');
+    const setupView = document.getElementById('adminSetupView');
+    const setupForm = document.getElementById('adminSetupForm');
+    const setupError = document.getElementById('adminSetupError');
     const clientSelect = document.getElementById('clientSelect');
+    const projectSelect = document.getElementById('projectSelect');
+    const projectMeta = document.getElementById('projectMeta');
+    const projectDriveLink = document.getElementById('projectDriveLink');
+    const projectStatus = document.getElementById('projectStatus');
+    const projectProgress = document.getElementById('projectProgress');
+    const projectProgressValue = document.getElementById('projectProgressValue');
+    const saveProjectMetaBtn = document.getElementById('saveProjectMeta');
+    const newClientForm = document.getElementById('newClientForm');
+    const newProjectForm = document.getElementById('newProjectForm');
+    const tabExisting = document.getElementById('tabExisting');
+    const tabNew = document.getElementById('tabNew');
+    const existingClientPanel = document.getElementById('existingClientPanel');
+    const newClientPanel = document.getElementById('newClientPanel');
+    const resetDataBtn = document.getElementById('resetDataBtn');
+    const deleteAdminBtn = document.getElementById('deleteAdminBtn');
     const taskForm = document.getElementById('newTaskForm');
     const successAlert = document.getElementById('taskSuccess');
     const taskList = document.getElementById('adminTaskList');
+    const commentsList = document.getElementById('adminCommentsList');
+    const newCommentForm = document.getElementById('newCommentForm');
     const logoutButtons = [document.getElementById('adminLogout'), document.getElementById('adminLogoutTop')].filter(
       Boolean,
     );
 
+    function populateProjectsSelect(selectEl, client) {
+      if (!selectEl) return;
+      selectEl.innerHTML = '';
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = 'Select a project';
+      placeholder.disabled = true;
+      placeholder.selected = true;
+      selectEl.appendChild(placeholder);
+      (client?.projects || []).forEach((p) => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.name;
+        selectEl.appendChild(opt);
+      });
+    }
+
+    function renderComments(listEl, project) {
+      if (!listEl) return;
+      listEl.innerHTML = '';
+      const comments = Array.isArray(project?.comments) ? project.comments : [];
+      if (!comments.length) {
+        const empty = document.createElement('div');
+        empty.className = 'task-empty';
+        empty.textContent = 'No comments yet.';
+        listEl.appendChild(empty);
+        return;
+      }
+      comments.forEach((c) => {
+        const item = document.createElement('div');
+        item.className = 'comment-item';
+        item.innerHTML = `<div>${c.text || ''}</div><small>${formatDateTime(c.at)}</small>`;
+        listEl.appendChild(item);
+      });
+    }
+
     populateClientSelect(clientSelect, clients);
+
+    function setTab(mode) {
+      const showExisting = mode === 'existing';
+      if (existingClientPanel) existingClientPanel.style.display = showExisting ? '' : 'none';
+      if (newClientPanel) newClientPanel.style.display = showExisting ? 'none' : '';
+      if (tabExisting) tabExisting.classList.toggle('active', showExisting);
+      if (tabNew) tabNew.classList.toggle('active', !showExisting);
+    }
+
+    setTab('existing');
+    if (tabExisting) tabExisting.addEventListener('click', () => setTab('existing'));
+    if (tabNew) tabNew.addEventListener('click', () => setTab('new'));
 
     logoutButtons.forEach((button) => {
       button.addEventListener('click', () => {
@@ -490,28 +793,63 @@
       setVisibility(loginView, false);
       setVisibility(dashboardView, true);
       logoutButtons.forEach((btn) => (btn.style.display = 'inline-flex'));
-      if (clientSelect && !clientSelect.value) {
-        clientSelect.selectedIndex = 0;
-      }
+      if (clientSelect && !clientSelect.value) clientSelect.selectedIndex = 0;
+      const selectedClient = getClientById(clientSelect?.value);
+      populateProjectsSelect(projectSelect, selectedClient);
+      if (projectMeta) projectMeta.style.display = projectSelect?.value ? '' : 'none';
+      const dir = document.getElementById('clientDirectory');
+      if (dir) renderClientDirectory(dir);
     }
 
-    if (sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true') {
+    // First-time admin setup or redirect if not logged in
+    const admins = loadAdmins();
+    if (!admins.length) {
+      setVisibility(loginView, false);
+      setVisibility(dashboardView, false);
+      setVisibility(setupView, true);
+    } else if (sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true') {
       showDashboard();
+    } else {
+      // No admin session: use unified login on client dashboard
+      window.location.href = 'client-dashboard.html';
+      return;
+    }
+
+    if (setupForm) {
+      setupForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fd = new FormData(setupForm);
+        const email = (fd.get('email') || '').toString().trim();
+        const password = (fd.get('password') || '').toString();
+        const password2 = (fd.get('password2') || '').toString();
+        if (!email || !password || password !== password2) {
+          showAlert(setupError, true);
+          return;
+        }
+        saveAdmins([{ email, passwordHash: await sha256(password) }]);
+        showAlert(setupError, false);
+        setVisibility(setupView, false);
+        setVisibility(loginView, true);
+      });
     }
 
     if (loginForm) {
-      loginForm.addEventListener('submit', (event) => {
+      loginForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const formData = new FormData(loginForm);
         const email = formData.get('email');
         const password = formData.get('password');
-        const valid =
-          email && password && email.trim().toLowerCase() === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password;
 
-        if (valid) {
+        if (await isAdminCredentials(email, password)) {
           showAlert(loginError, false);
           handleAdminLogin();
           showDashboard();
+          return;
+        }
+
+        const client = await getClientByCredentials(email, password);
+        if (client) {
+          window.location.href = 'client-dashboard.html';
         } else {
           showAlert(loginError, true);
         }
@@ -521,7 +859,36 @@
     if (clientSelect) {
       clientSelect.addEventListener('change', (event) => {
         const selectedClient = getClientById(event.target.value);
-        renderAdminTaskList(taskList, selectedClient);
+        if (projectSelect) {
+          projectSelect.value = '';
+          if (projectMeta) projectMeta.style.display = 'none';
+          populateProjectsSelect(projectSelect, selectedClient);
+        }
+        renderAdminTaskList(taskList, selectedClient, null);
+        showAlert(successAlert, false);
+        if (commentsList) commentsList.innerHTML = '';
+      });
+    }
+
+    if (projectSelect) {
+      projectSelect.addEventListener('change', () => {
+        const selectedClient = getClientById(clientSelect?.value);
+        const project = getActiveProject(selectedClient, projectSelect.value);
+        renderAdminTaskList(taskList, selectedClient, project);
+        if (projectMeta) {
+          projectMeta.style.display = project ? '' : 'none';
+          if (project) {
+            projectDriveLink.value = project.driveLink || '';
+            projectStatus.value = project.status || 'in-progress';
+            const computed = computeProjectProgress(project);
+            if (projectProgress) {
+              projectProgress.value = computed;
+              projectProgress.setAttribute('disabled', 'true');
+            }
+            if (projectProgressValue) projectProgressValue.textContent = `${computed}%`;
+          }
+        }
+        renderComments(commentsList, project);
         showAlert(successAlert, false);
       });
     }
@@ -529,7 +896,7 @@
     if (taskForm) {
       taskForm.addEventListener('submit', (event) => {
         event.preventDefault();
-        if (!clientSelect || !clientSelect.value) return;
+        if (!clientSelect?.value || !projectSelect?.value) return;
         const formData = new FormData(taskForm);
         const task = {
           title: formData.get('title'),
@@ -539,13 +906,213 @@
           dueDate: formData.get('dueDate') || '',
         };
 
-        addTaskToClient(clientSelect.value, task);
+        addTaskToProject(clientSelect.value, projectSelect.value, task);
         const updatedClient = getClientById(clientSelect.value);
-        renderAdminTaskList(taskList, updatedClient);
+        const project = getActiveProject(updatedClient, projectSelect.value);
+        renderAdminTaskList(taskList, updatedClient, project);
         taskForm.reset();
         taskForm.querySelector('#taskStatus').value = 'in-progress';
         taskForm.querySelector('#taskProgress').value = 25;
         showAlert(successAlert, true);
+      });
+    }
+
+    if (newClientForm) {
+      newClientForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fd = new FormData(newClientForm);
+        const name = (fd.get('name') || '').toString().trim();
+        const email = (fd.get('email') || '').toString().trim();
+        const password = (fd.get('password') || '').toString();
+        if (!name || !email || !password) return;
+        const client = {
+          id: `client-${Date.now()}`,
+          name,
+          email,
+          passwordHash: await sha256(password),
+          passwordPlain: password,
+          projects: [],
+        };
+        const added = (function(){ return client; })();
+        // persist
+        const list = loadClients(); list.push(added); saveClients(list);
+        populateClientSelect(clientSelect, loadClients());
+        const dir = document.getElementById('clientDirectory');
+        if (dir) renderClientDirectory(dir);
+        newClientForm.reset();
+        setTab('existing');
+      });
+    }
+
+    if (newProjectForm) {
+      newProjectForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (!clientSelect?.value) return;
+        const fd = new FormData(newProjectForm);
+        const project = {
+          name: fd.get('name'),
+          description: fd.get('description') || '',
+          status: fd.get('status') || 'in-progress',
+          progress: 0,
+          driveLink: fd.get('driveLink') || '',
+        };
+        const p = (function(){ return project; })();
+        // persist
+        const list = loadClients();
+        const c = list.find((x) => x.id === clientSelect.value);
+        if (c) {
+          c.projects = Array.isArray(c.projects) ? c.projects : [];
+          c.projects.unshift({ id: `project-${Date.now()}`, comments: [], tasks: [], ...p });
+          saveClients(list);
+        }
+        const updated = getClientById(clientSelect.value);
+        if (projectSelect) {
+          projectSelect.innerHTML = '';
+          const ph = document.createElement('option');
+          ph.value = '';
+          ph.textContent = 'Select a project';
+          ph.disabled = true;
+          projectSelect.appendChild(ph);
+          (updated.projects || []).forEach((proj) => {
+            const opt = document.createElement('option');
+            opt.value = proj.id;
+            opt.textContent = proj.name;
+            projectSelect.appendChild(opt);
+          });
+          projectSelect.value = updated.projects[0]?.id || '';
+          projectSelect.dispatchEvent(new Event('change'));
+        }
+        newProjectForm.reset();
+      });
+    }
+
+    if (saveProjectMetaBtn) {
+      saveProjectMetaBtn.addEventListener('click', () => {
+        if (!clientSelect?.value || !projectSelect?.value) return;
+        const clients = loadClients();
+        const target = clients.find((c) => c.id === clientSelect.value);
+        const project = target?.projects?.find((p) => p.id === projectSelect.value);
+        if (project) {
+          project.driveLink = projectDriveLink.value || '';
+          project.status = projectStatus.value || 'in-progress';
+          project.progress = computeProjectProgress(project);
+          saveClients(clients);
+        }
+        const updatedClient = getClientById(clientSelect.value);
+        const proj = getActiveProject(updatedClient, projectSelect.value);
+        if (commentsList) {
+          // refresh comments list remains the same
+          commentsList.innerHTML = '';
+          if (Array.isArray(proj?.comments)) {
+            proj.comments.forEach((c) => {
+              const item = document.createElement('div');
+              item.className = 'comment-item';
+              item.innerHTML = `<div>${c.text || ''}</div><small>${formatDateTime(c.at)}</small>`;
+              commentsList.appendChild(item);
+            });
+          }
+        }
+        showAlert(successAlert, true);
+      });
+    }
+
+    if (projectProgress) {
+      projectProgress.setAttribute('disabled', 'true');
+    }
+
+    if (newCommentForm) {
+      newCommentForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const text = (document.getElementById('commentText')?.value || '').trim();
+        if (!text || !clientSelect?.value || !projectSelect?.value) return;
+        const clients = loadClients();
+        const target = clients.find((c) => c.id === clientSelect.value);
+        const proj = target?.projects?.find((p) => p.id === projectSelect.value);
+        if (!Array.isArray(proj.comments)) proj.comments = [];
+        proj.comments.unshift({ id: `comment-${Date.now()}`, text, at: new Date().toISOString() });
+        saveClients(clients);
+        // refresh
+        if (commentsList) {
+          const item = document.createElement('div');
+          item.className = 'comment-item';
+          item.innerHTML = `<div>${text}</div><small>${formatDateTime(new Date().toISOString())}</small>`;
+          commentsList.prepend(item);
+        }
+        const txt = document.getElementById('commentText');
+        if (txt) txt.value = '';
+      });
+    }
+
+    // Delete client and project
+    const deleteClientBtn = document.getElementById('deleteClientBtn');
+    const deleteProjectBtn = document.getElementById('deleteProjectBtn');
+
+    if (deleteClientBtn) {
+      deleteClientBtn.addEventListener('click', () => {
+        if (!clientSelect?.value) return;
+        const client = getClientById(clientSelect.value);
+        if (!client) return;
+        if (!confirm(`Delete client "${client.name}" and all projects?`)) return;
+        deleteClient(client.id);
+        populateClientSelect(clientSelect, loadClients());
+        if (projectSelect) projectSelect.innerHTML = '';
+        if (projectMeta) projectMeta.style.display = 'none';
+        if (taskList) taskList.innerHTML = '<div class="task-empty">Select a client to view and manage their tasks.</div>';
+        if (commentsList) commentsList.innerHTML = '<div class="task-empty">No comments yet.</div>';
+      });
+    }
+
+    if (deleteProjectBtn) {
+      deleteProjectBtn.addEventListener('click', () => {
+        if (!clientSelect?.value || !projectSelect?.value) return;
+        const selectedClient = getClientById(clientSelect.value);
+        const project = getActiveProject(selectedClient, projectSelect.value);
+        if (!project) return;
+        if (!confirm(`Delete project "${project.name}" and all its tasks?`)) return;
+        deleteProjectFromClient(clientSelect.value, projectSelect.value);
+        // repopulate projects
+        const refreshed = getClientById(clientSelect.value);
+        if (projectSelect) {
+          projectSelect.innerHTML = '';
+          const ph = document.createElement('option');
+          ph.value = '';
+          ph.textContent = 'Select a project';
+          ph.disabled = true;
+          projectSelect.appendChild(ph);
+          (refreshed?.projects || []).forEach((proj) => {
+            const opt = document.createElement('option');
+            opt.value = proj.id;
+            opt.textContent = proj.name;
+            projectSelect.appendChild(opt);
+          });
+        }
+        if (projectMeta) projectMeta.style.display = 'none';
+        if (taskList) taskList.innerHTML = '<div class="task-empty">No updates yet.</div>';
+        if (commentsList) commentsList.innerHTML = '<div class="task-empty">No comments yet.</div>';
+        const dir = document.getElementById('clientDirectory');
+        if (dir) renderClientDirectory(dir);
+      });
+    }
+
+    if (deleteAdminBtn) {
+      deleteAdminBtn.addEventListener('click', () => {
+        if (!confirm('Delete the current admin and return to setup?')) return;
+        saveAdmins([]);
+        handleAdminLogout();
+        window.location.href = 'admin-dashboard.html';
+      });
+    }
+
+    if (resetDataBtn) {
+      resetDataBtn.addEventListener('click', () => {
+        if (!confirm('This will remove ALL clients and projects. Continue?')) return;
+        localStorage.removeItem(STORAGE_KEY);
+        populateClientSelect(clientSelect, loadClients());
+        if (projectSelect) projectSelect.innerHTML = '';
+        if (projectMeta) projectMeta.style.display = 'none';
+        if (taskList) taskList.innerHTML = '<div class="task-empty">No updates yet.</div>';
+        if (commentsList) commentsList.innerHTML = '<div class="task-empty">No comments yet.</div>';
+        showAlert(successAlert, false);
       });
     }
 
@@ -561,23 +1128,32 @@
       });
 
       taskList.addEventListener('click', (event) => {
-        const button = event.target.closest('.admin-save');
-        if (!button || !clientSelect || !clientSelect.value) return;
-        const card = button.closest('.admin-task-card');
+        const saveBtn = event.target.closest('.admin-save');
+        const delBtn = event.target.closest('.admin-delete');
+        if (!clientSelect?.value || !projectSelect?.value) return;
+        const card = event.target.closest('.admin-task-card');
         if (!card) return;
         const taskId = card.dataset.taskId;
-        const status = card.querySelector('.admin-status')?.value || 'in-progress';
-        const progress = Number(card.querySelector('.admin-progress')?.value || 0);
-        const dueDate = card.querySelector('.admin-due-date')?.value || '';
 
-        updateTaskOnClient(clientSelect.value, taskId, {
-          status,
-          progress: Math.min(100, Math.max(0, progress)),
-          dueDate,
-        });
+        if (delBtn) {
+          if (!confirm('Delete this task?')) return;
+          deleteTaskFromProject(clientSelect.value, projectSelect.value, taskId);
+        } else if (saveBtn) {
+          const status = card.querySelector('.admin-status')?.value || 'in-progress';
+          const progress = Number(card.querySelector('.admin-progress')?.value || 0);
+          const dueDate = card.querySelector('.admin-due-date')?.value || '';
+          updateTaskOnProject(clientSelect.value, projectSelect.value, taskId, {
+            status,
+            progress: Math.min(100, Math.max(0, progress)),
+            dueDate,
+          });
+        } else {
+          return;
+        }
 
         const updatedClient = getClientById(clientSelect.value);
-        renderAdminTaskList(taskList, updatedClient);
+        const project = getActiveProject(updatedClient, projectSelect.value);
+        renderAdminTaskList(taskList, updatedClient, project);
         showAlert(successAlert, true);
       });
     }
