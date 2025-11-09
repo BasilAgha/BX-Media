@@ -361,8 +361,8 @@
       card.innerHTML = `
         <header>
           <div>
-            <h3 style="margin:0">${project.name}</h3>
-            <p class="helper-text" style="margin:0">${project.description || ''}</p>
+            <h3>${project.name}</h3>
+            <p class="helper-text">${project.description || ''}</p>
           </div>
           ${projectStatusBadge(project.status || 'in-progress')}
         </header>
@@ -373,12 +373,12 @@
           </div>
           ${
             project.driveLink
-              ? `<a href="${project.driveLink}" target="_blank" rel="noopener noreferrer" class="secondary-btn" style="width:max-content">Drive</a>`
+              ? `<a href="${project.driveLink}" target="_blank" rel="noopener noreferrer" class="secondary-btn pill-btn">Drive</a>`
               : ''
           }
         </div>
         <div>
-          <h4 style="margin:0.5rem 0 0.25rem">Timeline</h4>
+          <h4 class="timeline-title">Timeline</h4>
           <div class="timeline">
             ${
               (project.tasks || [])
@@ -709,7 +709,7 @@
             <span class="badge ${task.status}">${STATUS_LABELS[task.status] || task.status}</span>
           </header>
           <p>${task.description || '<span class="helper-text">No description provided yet.</span>'}</p>
-          <div class="form-grid" style="margin-top: 0.5rem">
+          <div class="form-grid compact-grid">
             <div class="form-row">
               <label>Status</label>
               <select class="admin-status">
@@ -733,7 +733,7 @@
               <input type="date" value="${task.dueDate ? task.dueDate : ''}" class="admin-due-date" />
             </div>
           </div>
-          <div style="display: flex; justify-content: flex-end; gap: 0.75rem">
+          <div class="inline-actions">
             <button type="button" class="danger-btn admin-delete" data-task-id="${task.id}">Delete</button>
             <button type="button" class="secondary-btn admin-save" data-task-id="${task.id}">Save changes</button>
           </div>

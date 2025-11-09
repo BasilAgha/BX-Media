@@ -21,7 +21,7 @@
         </div>
         <nav class="dashboard-nav">
           <a href="index.html">← Back to site</a>
-          <button type="button" id="adminLogout" class="secondary-btn" style="display: none">
+          <button type="button" id="adminLogout" class="ghost-btn" style="display: none">
             Log out
           </button>
         </nav>
@@ -53,46 +53,46 @@
         <!-- Unified login moved to client-dashboard.html -->
 
         <section class="dashboard-panel" id="adminDashboard" style="display: none">
-          <header style="display: flex; justify-content: space-between; align-items: center; gap: 1rem">
-            <div>
+          <header class="panel-header">
+            <div class="panel-title">
               <h1>Project control center</h1>
               <p class="helper-text">
                 Update milestones and progress for every client in one place. All changes sync instantly to
                 the client dashboard.
               </p>
             </div>
-            <div>
-              <button type="button" id="resetDataBtn" class="secondary-btn" title="Clear all clients and projects" style="margin-right: .5rem">Reset data</button>
-              <button type="button" id="deleteAdminBtn" class="danger-btn" title="Delete current admin" style="margin-right: .5rem">Delete admin</button>
+            <div class="panel-actions">
+              <button type="button" id="resetDataBtn" class="ghost-btn" title="Clear all clients and projects">Reset data</button>
+              <button type="button" id="deleteAdminBtn" class="danger-btn" title="Delete current admin">Delete admin</button>
               <button type="button" id="adminLogoutTop" class="secondary-btn">Log out</button>
             </div>
           </header>
 
-          <section class="dashboard-panel" style="margin: 0; background: rgba(255, 255, 255, 0.02)">
+          <section class="dashboard-panel panel-subtle">
             <h2>Manage clients and projects</h2>
-            <div style="display:flex; gap:.5rem; margin-bottom:.75rem">
-              <button type="button" id="tabExisting" class="secondary-btn">Existing client</button>
-              <button type="button" id="tabNew" class="secondary-btn">Add new client</button>
+            <div class="tab-controls">
+              <button type="button" id="tabExisting" class="secondary-btn tab-btn">Existing client</button>
+              <button type="button" id="tabNew" class="secondary-btn tab-btn">Add new client</button>
             </div>
             <div id="existingClientPanel">
-            <div class="form-grid" style="margin-bottom: 1.25rem">
-              <div class="form-row">
-                <label for="clientSelect">Client</label>
-                <div style="display:flex; gap:.5rem; align-items:center">
-                  <select id="clientSelect" required style="flex:1"></select>
-                  <button type="button" id="deleteClientBtn" class="danger-btn" title="Delete client">Delete</button>
+              <div class="form-grid section-stack">
+                <div class="form-row">
+                  <label for="clientSelect">Client</label>
+                  <div class="field-with-action">
+                    <select id="clientSelect" required></select>
+                    <button type="button" id="deleteClientBtn" class="danger-btn" title="Delete client">Delete</button>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <label for="projectSelect">Project</label>
+                  <div class="field-with-action">
+                    <select id="projectSelect"></select>
+                    <button type="button" id="deleteProjectBtn" class="danger-btn" title="Delete project">Delete</button>
+                  </div>
                 </div>
               </div>
-              <div class="form-row">
-                <label for="projectSelect">Project</label>
-                <div style="display:flex; gap:.5rem; align-items:center">
-                  <select id="projectSelect" style="flex:1"></select>
-                  <button type="button" id="deleteProjectBtn" class="danger-btn" title="Delete project">Delete</button>
-                </div>
-              </div>
-            </div>
 
-              <form class="form-grid" id="newProjectForm" style="margin-bottom: 1.25rem">
+              <form class="form-grid section-stack" id="newProjectForm">
                 <div class="form-row"><label>Project name</label><input type="text" name="name" placeholder="Campaign alpha" required /></div>
                 <div class="form-row"><label>Description</label><textarea name="description" rows="2" placeholder="Short summary"></textarea></div>
                 <div class="form-row"><label>Status</label>
@@ -105,10 +105,10 @@
                 </div>
               
                 <div class="form-row"><label>Drive link</label><input type="url" name="driveLink" placeholder="https://drive.google.com/..." /></div>
-                <button type="submit" class="primary-btn">Add project</button>
+                <div class="inline-actions"><button type="submit" class="primary-btn">Add project</button></div>
               </form>
 
-              <div class="form-grid" id="projectMeta" style="margin-bottom: 1.25rem; display: none">
+              <div class="form-grid section-stack" id="projectMeta" style="display: none">
                 <div class="form-row"><label>Drive link</label><input type="url" id="projectDriveLink" placeholder="https://drive.google.com/..." /></div>
                 <div class="form-row"><label>Status</label>
                   <select id="projectStatus">
@@ -124,7 +124,7 @@
                     <span id="projectProgressValue">0%</span>
                   </div>
                 </div>
-                <div style="display: flex; justify-content: flex-end"><button type="button" id="saveProjectMeta" class="secondary-btn">Save project</button></div>
+                <div class="inline-actions"><button type="button" id="saveProjectMeta" class="secondary-btn">Save project</button></div>
               </div>
 
               <form class="form-grid" id="newTaskForm">
@@ -159,7 +159,7 @@
             </div>
 
             <div id="newClientPanel" style="display:none">
-              <form class="form-grid" id="newClientForm" style="margin-bottom: 1.25rem">
+              <form class="form-grid section-stack" id="newClientForm">
                 <div class="form-row"><label>New client name</label><input type="text" name="name" placeholder="Client name" required /></div>
                 <div class="form-row"><label>Client username</label><input type="text" name="username" placeholder="client.username" required /></div>
                 <div class="form-row"><label>Client password</label><input type="password" name="password" placeholder="Password" required /></div>
@@ -169,21 +169,21 @@
             </div>
           </section>
 
-          <section class="dashboard-panel" style="margin: 0">
+          <section class="dashboard-panel panel-subtle">
             <h2>Current workstream</h2>
             <div id="adminTaskList" class="task-admin-list"></div>
           </section>
 
-          <section class="dashboard-panel" style="margin: 0">
+          <section class="dashboard-panel panel-subtle">
             <h2>Project comments</h2>
             <div id="adminCommentsList" class="comment-list"></div>
-            <form class="form-grid" id="newCommentForm" style="margin-top: 1rem">
+            <form class="form-grid section-stack" id="newCommentForm">
               <div class="form-row"><label for="commentText">Add comment</label><textarea id="commentText" rows="2" placeholder="Note for client (visible to client)"></textarea></div>
-              <div style="display: flex; justify-content: flex-end"><button type="submit" class="secondary-btn">Post comment</button></div>
+              <div class="inline-actions"><button type="submit" class="secondary-btn">Post comment</button></div>
             </form>
           </section>
 
-          <section class="dashboard-panel" style="margin: 0">
+          <section class="dashboard-panel panel-subtle">
             <h2>Client directory</h2>
             <p class="helper-text">Only the sole admin can view client credentials.</p>
             <div id="clientDirectory"></div>
