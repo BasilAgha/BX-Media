@@ -1006,10 +1006,22 @@ section {
   }
 
   .about-flex,
-  .contact-content,
   .footer-content {
     flex-direction: column;
     text-align: center;
+  }
+
+  .contact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-form-panel .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .form-footer {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .slide-content h1 {
@@ -1397,6 +1409,14 @@ section {
 }
 
 @media (max-width: 1024px) {
+  .contact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-form-panel {
+    padding: 2rem;
+  }
+
   .approach-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 560px) {
