@@ -391,6 +391,12 @@ section {
   box-shadow: inset 0 0 30px rgba(255, 102, 0, 0.15);
 }
 
+.service-icon i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .service-card h3 {
   color: #fff;
   margin-bottom: 1rem;
