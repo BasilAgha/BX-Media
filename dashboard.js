@@ -470,6 +470,16 @@
     const dashboardView = document.getElementById('clientDashboard');
     const loginForm = document.getElementById('clientLoginForm');
     const loginError = document.getElementById('clientLoginError');
+    const usernameInput = document.getElementById('clientUsername');
+    if (loginForm) {
+      loginForm.setAttribute('novalidate', 'novalidate');
+    }
+    if (usernameInput) {
+      usernameInput.setAttribute('type', 'text');
+      usernameInput.setAttribute('inputmode', 'text');
+      usernameInput.setAttribute('autocomplete', 'username');
+      usernameInput.setAttribute('placeholder', usernameInput.getAttribute('placeholder') || 'your.username');
+    }
     const summaryContainer = document.getElementById('clientSummary');
     const tasksContainer = document.getElementById('clientTasks');
     const projectsContainer = document.getElementById('clientProjects');
