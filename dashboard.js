@@ -6,6 +6,13 @@
 
   // Start empty; admins add clients via the console
   const DEFAULT_CLIENTS = [];
+  const DEFAULT_ADMINS = [
+    {
+      id: 'admin-default',
+      username: 'bxmediaadmin',
+      passwordHash: '552ff6441610b4e92a525701a09f887919aa04d8873128ea51ed769f541ff65b',
+    },
+  ];
 
   const STATUS_LABELS = {
     'not-started': 'Not started',
@@ -53,6 +60,13 @@
   function migrateClientsSchema(clients) {
     let changed = false;
     clients.forEach((client) => {
+      const fallbackUsername = (client.username || client.email || '')
+        .toString()
+        .trim();
+      if (!client.username && fallbackUsername) {
+        client.username = fallbackUsername;
+        changed = true;
+      }
       // Carry forward legacy plain password for admin visibility
       if (client.password && !client.passwordPlain) {
         client.passwordPlain = client.password;
@@ -96,11 +110,19 @@
   function cleanupDemoClients(clients) {
     try {
       const before = clients.length;
-      const blacklistEmails = new Set(['zeetex@partner.com', 'projects@titaniumauto.com']);
+      const blacklistIdentifiers = new Set([
+        'zeetex@partner.com',
+        'projects@titaniumauto.com',
+        'zeetex',
+        'titaniumauto',
+      ]);
       const filtered = clients.filter((c) => {
-        const email = (c.email || '').trim().toLowerCase();
+        const identifier = (c.username || c.email || '')
+          .toString()
+          .trim()
+          .toLowerCase();
         const name = (c.name || '').trim().toLowerCase();
-        if (blacklistEmails.has(email)) return false;
+        if (identifier && blacklistIdentifiers.has(identifier)) return false;
         if (name.includes('zeetex') || name.includes('titanium auto')) return false;
         // Old demo entries stored plain passwords
         if (typeof c.password === 'string' && c.password.length) return false;
@@ -113,16 +135,33 @@
     }
   }
 
-  function loadAdmins() {
-    if (!window.localStorage) return [];
-    try {
-      const raw = localStorage.getItem(ADMINS_KEY);
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (_) {
-      return [];
+  function ensureDefaultAdmins() {
+    if (!window.localStorage) {
+      return DEFAULT_ADMINS.slice();
     }
+
+    const stored = localStorage.getItem(ADMINS_KEY);
+    if (!stored) {
+      localStorage.setItem(ADMINS_KEY, JSON.stringify(DEFAULT_ADMINS));
+      return DEFAULT_ADMINS.slice();
+    }
+
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    } catch (error) {
+      console.error('Unable to parse stored admin data. Resetting to default admin.', error);
+    }
+
+    localStorage.setItem(ADMINS_KEY, JSON.stringify(DEFAULT_ADMINS));
+    return DEFAULT_ADMINS.slice();
+  }
+
+  function loadAdmins() {
+    const admins = ensureDefaultAdmins();
+    return JSON.parse(JSON.stringify(admins));
   }
 
   function saveAdmins(admins) {
@@ -136,21 +175,21 @@
     return clients.find((client) => client.id === id) || null;
   }
 
-  async function getClientByCredentials(email, password) {
+  async function getClientByCredentials(username, password) {
     const clients = loadClients();
-    const normalizedEmail = (email || '').trim().toLowerCase();
+    const normalizedUsername = (username || '').trim().toLowerCase();
     const hash = await sha256(password || '');
-    const found = clients.find((client) => client.email?.trim().toLowerCase() === normalizedEmail);
+    const found = clients.find((client) => (client.username || '').trim().toLowerCase() === normalizedUsername);
     if (!found) return null;
     if (found.passwordHash) return found.passwordHash === hash ? found : null;
     return found.password && found.password === password ? found : null;
   }
 
-  async function isAdminCredentials(email, password) {
+  async function isAdminCredentials(username, password) {
     const admins = loadAdmins();
-    const normalizedEmail = (email || '').trim().toLowerCase();
+    const normalizedUsername = (username || '').trim().toLowerCase();
     const hash = await sha256(password || '');
-    return admins.some((a) => a.email?.trim().toLowerCase() === normalizedEmail && a.passwordHash === hash);
+    return admins.some((a) => (a.username || '').trim().toLowerCase() === normalizedUsername && a.passwordHash === hash);
   }
 
   function getActiveProject(client, projectId) {
@@ -322,8 +361,8 @@
       card.innerHTML = `
         <header>
           <div>
-            <h3 style="margin:0">${project.name}</h3>
-            <p class="helper-text" style="margin:0">${project.description || ''}</p>
+            <h3>${project.name}</h3>
+            <p class="helper-text">${project.description || ''}</p>
           </div>
           ${projectStatusBadge(project.status || 'in-progress')}
         </header>
@@ -334,12 +373,12 @@
           </div>
           ${
             project.driveLink
-              ? `<a href="${project.driveLink}" target="_blank" rel="noopener noreferrer" class="secondary-btn" style="width:max-content">Drive</a>`
+              ? `<a href="${project.driveLink}" target="_blank" rel="noopener noreferrer" class="secondary-btn pill-btn">Drive</a>`
               : ''
           }
         </div>
         <div>
-          <h4 style="margin:0.5rem 0 0.25rem">Timeline</h4>
+          <h4 class="timeline-title">Timeline</h4>
           <div class="timeline">
             ${
               (project.tasks || [])
@@ -375,7 +414,7 @@
       <thead>
         <tr>
           <th>Client</th>
-          <th>Email</th>
+          <th>Username</th>
           <th>Password</th>
         </tr>
       </thead>
@@ -386,7 +425,7 @@
       const pwd = c.passwordPlain ? c.passwordPlain : '<span class="helper-text">Unavailable</span>';
       row.innerHTML = `
         <td><strong>${c.name || ''}</strong></td>
-        <td>${c.email || ''}</td>
+        <td>${c.username || ''}</td>
         <td>${pwd}</td>
       `;
       tbody.appendChild(row);
@@ -431,6 +470,16 @@
     const dashboardView = document.getElementById('clientDashboard');
     const loginForm = document.getElementById('clientLoginForm');
     const loginError = document.getElementById('clientLoginError');
+    const usernameInput = document.getElementById('clientUsername');
+    if (loginForm) {
+      loginForm.setAttribute('novalidate', 'novalidate');
+    }
+    if (usernameInput) {
+      usernameInput.setAttribute('type', 'text');
+      usernameInput.setAttribute('inputmode', 'text');
+      usernameInput.setAttribute('autocomplete', 'username');
+      usernameInput.setAttribute('placeholder', usernameInput.getAttribute('placeholder') || 'your.username');
+    }
     const summaryContainer = document.getElementById('clientSummary');
     const tasksContainer = document.getElementById('clientTasks');
     const projectsContainer = document.getElementById('clientProjects');
@@ -489,12 +538,12 @@
       loginForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const formData = new FormData(loginForm);
-        const email = formData.get('email');
-        const password = formData.get('password');
+        const username = (formData.get('username') || '').toString();
+        const password = (formData.get('password') || '').toString();
         const role = formData.get('role') || 'client';
 
         if (role === 'admin') {
-          if (await isAdminCredentials(email, password)) {
+          if (await isAdminCredentials(username, password)) {
             handleAdminLogin();
             window.location.href = 'admin-dashboard.html';
           } else {
@@ -504,7 +553,7 @@
         }
 
         if (role === 'client') {
-          const client = await getClientByCredentials(email, password);
+          const client = await getClientByCredentials(username, password);
           if (client) {
             showAlert(loginError, false);
             showClientDashboard(client);
@@ -660,7 +709,7 @@
             <span class="badge ${task.status}">${STATUS_LABELS[task.status] || task.status}</span>
           </header>
           <p>${task.description || '<span class="helper-text">No description provided yet.</span>'}</p>
-          <div class="form-grid" style="margin-top: 0.5rem">
+          <div class="form-grid compact-grid">
             <div class="form-row">
               <label>Status</label>
               <select class="admin-status">
@@ -684,7 +733,7 @@
               <input type="date" value="${task.dueDate ? task.dueDate : ''}" class="admin-due-date" />
             </div>
           </div>
-          <div style="display: flex; justify-content: flex-end; gap: 0.75rem">
+          <div class="inline-actions">
             <button type="button" class="danger-btn admin-delete" data-task-id="${task.id}">Delete</button>
             <button type="button" class="secondary-btn admin-save" data-task-id="${task.id}">Save changes</button>
           </div>
@@ -819,14 +868,14 @@
       setupForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const fd = new FormData(setupForm);
-        const email = (fd.get('email') || '').toString().trim();
+        const username = (fd.get('username') || '').toString().trim();
         const password = (fd.get('password') || '').toString();
         const password2 = (fd.get('password2') || '').toString();
-        if (!email || !password || password !== password2) {
+        if (!username || !password || password !== password2) {
           showAlert(setupError, true);
           return;
         }
-        saveAdmins([{ email, passwordHash: await sha256(password) }]);
+        saveAdmins([{ username, passwordHash: await sha256(password) }]);
         showAlert(setupError, false);
         setVisibility(setupView, false);
         setVisibility(loginView, true);
@@ -837,17 +886,17 @@
       loginForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const formData = new FormData(loginForm);
-        const email = formData.get('email');
-        const password = formData.get('password');
+        const username = (formData.get('username') || '').toString();
+        const password = (formData.get('password') || '').toString();
 
-        if (await isAdminCredentials(email, password)) {
+        if (await isAdminCredentials(username, password)) {
           showAlert(loginError, false);
           handleAdminLogin();
           showDashboard();
           return;
         }
 
-        const client = await getClientByCredentials(email, password);
+        const client = await getClientByCredentials(username, password);
         if (client) {
           window.location.href = 'client-dashboard.html';
         } else {
@@ -922,13 +971,13 @@
         e.preventDefault();
         const fd = new FormData(newClientForm);
         const name = (fd.get('name') || '').toString().trim();
-        const email = (fd.get('email') || '').toString().trim();
+        const username = (fd.get('username') || '').toString().trim();
         const password = (fd.get('password') || '').toString();
-        if (!name || !email || !password) return;
+        if (!name || !username || !password) return;
         const client = {
           id: `client-${Date.now()}`,
           name,
-          email,
+          username,
           passwordHash: await sha256(password),
           passwordPlain: password,
           projects: [],

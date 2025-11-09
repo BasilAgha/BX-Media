@@ -21,7 +21,7 @@
         </div>
         <nav class="dashboard-nav">
           <a href="index.html">← Back to site</a>
-          <button type="button" id="clientLogout" class="secondary-btn" style="display: none">
+          <button type="button" id="clientLogout" class="ghost-btn" style="display: none">
             Log out
           </button>
         </nav>
@@ -30,19 +30,19 @@
         <section class="dashboard-panel" id="clientLoginView">
           <h1>Client access</h1>
           <p class="helper-text">
-            Sign in with the credentials shared by your BX Media account manager to
+            Sign in with the username and password shared by your BX Media account manager to
             view real-time progress for your active projects.
           </p>
-          <div class="alert error" id="clientLoginError">Invalid email or password. Please try again.</div>
+          <div class="alert error" id="clientLoginError">Invalid username or password. Please try again.</div>
           <form class="form-grid" id="clientLoginForm">
             <div class="form-row">
-              <label for="clientEmail">Email address</label>
+              <label for="clientUsername">Username</label>
               <input
-                type="email"
-                id="clientEmail"
-                name="email"
-                autocomplete="email"
-                placeholder="you@company.com"
+                type="text"
+                id="clientUsername"
+                name="username"
+                autocomplete="username"
+                placeholder="your.username"
                 required
               />
             </div>
@@ -69,20 +69,20 @@
         </section>
 
         <section class="dashboard-panel" id="clientDashboard" style="display: none">
-          <header style="display: flex; justify-content: space-between; align-items: center; gap: 1rem">
-            <div>
+          <header class="panel-header">
+            <div class="panel-title">
               <h1 id="clientGreeting">Welcome back!</h1>
               <p class="helper-text" id="clientSubtitle">Here is the latest on your active projects.</p>
             </div>
-            <div>
-              <button type="button" id="clientLogoutTop" class="secondary-btn">Log out</button>
+            <div class="panel-actions">
+              <button type="button" id="clientLogoutTop" class="ghost-btn">Log out</button>
             </div>
           </header>
 
           <section class="task-summary" id="clientSummary"></section>
 
-          <div id="clientProjects" class="project-grid"></div>
-          <div id="clientTasks"></div>
+          <div id="clientProjects" class="project-grid section-stack"></div>
+          <div id="clientTasks" class="section-stack"></div>
         </section>
       </main>
     </div>
