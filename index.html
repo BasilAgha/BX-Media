@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>BX Media — High-End Automotive Content</title>
-<meta name="description" content="BX Media creates bold cinematic content for car brands. Based in Saudi Arabia, we help automotive brands grow with visuals that drive results.">
+  <meta name="description" content="BX Media creates bold cinematic content for car brands. Based in Saudi Arabia, we help automotive brands grow with visuals that drive results.">
 
   <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link
     rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
@@ -15,42 +15,36 @@
   />
   <link rel="icon" href="favicon.ico" type="image/x-icon">
 
-  <!-- Social Media Preview -->
-<meta property="og:title" content="BX Media — Automotive Content Agency" />
-<meta property="og:description" content="Cinematic content that moves your audience. Based in Saudi Arabia." />
-<meta property="og:image" content="https://bx.media/bxmedia-preview.jpg" />
-<meta property="og:url" content="https://bx.media" />
-<meta property="og:type" content="website" />
+  <meta property="og:title" content="BX Media — Automotive Content Agency" />
+  <meta property="og:description" content="Cinematic content that moves your audience. Based in Saudi Arabia." />
+  <meta property="og:image" content="https://bx.media/bxmedia-preview.jpg" />
+  <meta property="og:url" content="https://bx.media" />
+  <meta property="og:type" content="website" />
 
-<!-- For Twitter (optional) -->
-<meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:card" content="summary_large_image">
 
-
-<!-- Apple iOS home screen icon -->
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-
-<!-- Android Chrome / Home screen icons -->
-<link rel="icon" type="image/png" sizes="192x192" href="web-app-manifest-192x192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="web-app-manifest-512x512.png">
-
-
-  
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="web-app-manifest-192x192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="web-app-manifest-512x512.png">
 </head>
 <body>
 
-  <!-- Navbar -->
-  <nav class="navbar">
+  <div class="scroll-progress">
+    <div class="progress-bar"></div>
+  </div>
+
+  <nav class="navbar" data-animate="navbar">
     <div class="nav-container">
       <div class="nav-logo">
-        <a href="#home"><img src= "7 logo.png" alt="BXM Logo" class="logo-img" /></a>
+        <a href="#home"><img src="7 logo.png" alt="BXM Logo" class="logo-img" /></a>
       </div>
       <ul class="nav-menu">
-        <li><a href="#home">Home</a></li>
-        <li><a href="#about">About</a></li>
-        <li><a href="#services">Services</a></li>
-        <li><a href="#projects">Projects</a></li>
-        <li><a href="client-dashboard.html">Dashboard</a></li>
-        <li><a href="#contact">Contact</a></li>
+        <li class="nav-item" style="--index: 0"><a href="#home">Home</a></li>
+        <li class="nav-item" style="--index: 1"><a href="#about">About</a></li>
+        <li class="nav-item" style="--index: 2"><a href="#services">Services</a></li>
+        <li class="nav-item" style="--index: 3"><a href="#projects">Projects</a></li>
+        <li class="nav-item" style="--index: 4"><a href="client-dashboard.html">Dashboard</a></li>
+        <li class="nav-item" style="--index: 5"><a href="#contact">Contact</a></li>
       </ul>
       <div class="hamburger">
         <span></span><span></span><span></span>
@@ -58,25 +52,26 @@
     </div>
   </nav>
 
-<section class="hero">
-  <div class="hero-video-wrapper">
-    <video class="hero-video" autoplay muted loop playsinline preload="auto" poster="poster.jpg">
-  <source src="hero-video.mp4" type="video/mp4">
-  <source src="hero-video.webm" type="video/webm">
-  Your browser does not support the video tag.
-</video>
-  </div>
-  <div class="hero-overlay">
-    <div class="slide-content">
-      <h1>Powering the Future of Automotive Content</h1>
-      <p>BX Media creates cinematic visuals and high-impact marketing built for the automotive world. From car brands to premium service centers — we craft stories that move.</p>
-      <a href="#services" class="cta-btn">Explore Services</a>
+  <section class="hero" id="home">
+    <div class="hero-video-wrapper">
+      <video class="hero-video" autoplay muted loop playsinline preload="auto" poster="poster.jpg">
+        <source src="hero-video.mp4" type="video/mp4">
+        <source src="hero-video.webm" type="video/webm">
+        Your browser does not support the video tag.
+      </video>
     </div>
-  </div>
-</section>
+    <div class="hero-overlay">
+      <div class="slide-content">
+        <h1 class="hero-title">Powering the Future of Automotive Content</h1>
+        <p class="hero-description">BX Media creates cinematic visuals and high-impact marketing built for the automotive world. From car brands to premium service centers — we craft stories that move.</p>
+        <a href="#services" class="cta-btn">
+          <span>Explore Services</span>
+          <i class="fas fa-arrow-right"></i>
+        </a>
+      </div>
+    </div>
+  </section>
 
-
-  <!-- Scroll Storytelling -->
   <section id="story" class="scroll-story fade-in">
     <div class="container">
       <div class="story-layout">
@@ -89,22 +84,22 @@
           </div>
         </div>
         <div class="story-steps">
-          <article class="story-step is-active" tabindex="0" data-media="Projects/albassami0001.jpg" data-title="Cinematic craft that moves audiences" data-description="We choreograph every frame to highlight speed, detail, and emotion so your vehicles become heroes of the story.">
+          <article class="story-step is-active" tabindex="0" data-media="Projects/albassami0001.jpg" data-title="Cinematic craft that moves audiences" data-description="We choreograph every frame to highlight speed, detail, and emotion so your vehicles become heroes of the story." style="--index: 0">
             <span class="step-index">01</span>
             <h3>Precision cinematography</h3>
             <p>Every shot is engineered to feel fast, tactile, and true to the machine on screen.</p>
           </article>
-          <article class="story-step" tabindex="0" data-media="Projects/samf0001.jpg" data-title="Stories that accelerate brand growth" data-description="Integrated creative, production, and post teams work in sync to produce scroll-stopping campaigns.">
+          <article class="story-step" tabindex="0" data-media="Projects/samf0001.jpg" data-title="Stories that accelerate brand growth" data-description="Integrated creative, production, and post teams work in sync to produce scroll-stopping campaigns." style="--index: 1">
             <span class="step-index">02</span>
             <h3>Integrated campaign thinking</h3>
             <p>We align storyboards, social edits, and hero films to deliver one cohesive experience.</p>
           </article>
-          <article class="story-step" tabindex="0" data-media="Projects/toyotalc3000001.jpg" data-title="Experiences tailored to every launch" data-description="From limited-edition reveals to nationwide rollouts, we build modular content systems that scale.">
+          <article class="story-step" tabindex="0" data-media="Projects/toyotalc3000001.jpg" data-title="Experiences tailored to every launch" data-description="From limited-edition reveals to nationwide rollouts, we build modular content systems that scale." style="--index: 2">
             <span class="step-index">03</span>
             <h3>Launch-ready ecosystems</h3>
             <p>High-impact hero content is paired with platform-specific deliverables for maximum reach.</p>
           </article>
-          <article class="story-step" tabindex="0" data-media="Projects/vip00.png" data-title="Partnerships built on trust" data-description="We collaborate closely with automotive leaders across the region, translating ambition into unforgettable visuals.">
+          <article class="story-step" tabindex="0" data-media="Projects/vip00.png" data-title="Partnerships built on trust" data-description="We collaborate closely with automotive leaders across the region, translating ambition into unforgettable visuals." style="--index: 3">
             <span class="step-index">04</span>
             <h3>Trusted automotive partners</h3>
             <p>Relationships across OEMs, dealerships, and performance houses keep us ahead of the curve.</p>
@@ -114,34 +109,31 @@
     </div>
   </section>
 
-
-  <!-- About -->
-<section id="about" class="about fade-in">
-  <div class="container about-flex">
-    <div class="about-logo">
-      <img src="7 logo.png" alt="BX Media Logo" />
+  <section id="about" class="about fade-in">
+    <div class="container about-flex">
+      <div class="about-logo" data-parallax="slow">
+        <img src="7 logo.png" alt="BX Media Logo" />
+      </div>
+      <div class="about-text">
+        <h2 class="split-text">About BX Media</h2>
+        <p>
+          BX Media is a premium automotive content and marketing agency based in Riyadh, Saudi Arabia. We specialize in producing cinematic videos, influencer-driven campaigns, and branded digital assets for luxury car brands, performance garages, and the region's top automotive players.
+        </p>
+        <p>
+          Our vision is to set the standard for automotive media in the Middle East — delivering content that turns heads, builds loyalty, and drives measurable growth.
+        </p>
+      </div>
     </div>
-    <div class="about-text">
-      <h2>About BX Media</h2>
-      <p>
-        BX Media is a premium automotive content and marketing agency based in Riyadh, Saudi Arabia. We specialize in producing cinematic videos, influencer-driven campaigns, and branded digital assets for luxury car brands, performance garages, and the region’s top automotive players.
-      </p>
-      <p>
-        Our vision is to set the standard for automotive media in the Middle East — delivering content that turns heads, builds loyalty, and drives measurable growth.
-      </p>
-    </div>
-  </div>
-</section>
+  </section>
 
-  <!-- Services -->
   <section id="services" class="services fade-in">
     <div class="container">
       <div class="section-header">
-        <h4>Our Expertise</h4>
-        <h2>Services We Offer</h2>
+        <h4 class="fade-up">Our Expertise</h4>
+        <h2 class="fade-up" style="--delay: 0.1s">Services We Offer</h2>
       </div>
       <div class="services-grid" role="list">
-        <article class="service-card" role="listitem">
+        <article class="service-card" role="listitem" style="--index: 0">
           <div class="service-icon">
             <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
               <rect x="6" y="14" width="22" height="20" rx="4" ry="4" />
@@ -151,7 +143,7 @@
           <h3>High-End Video & Content Production</h3>
           <p>Cinematic reels, brand films, influencer videos, and campaign visuals tailored for the automotive industry.</p>
         </article>
-        <article class="service-card" role="listitem">
+        <article class="service-card" role="listitem" style="--index: 1">
           <div class="service-icon">
             <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
               <circle cx="16" cy="16" r="5" />
@@ -164,7 +156,7 @@
           <h3>Social Media Account Management</h3>
           <p>Full content planning, posting, and optimization to grow your brand's presence and performance.</p>
         </article>
-        <article class="service-card" role="listitem">
+        <article class="service-card" role="listitem" style="--index: 2">
           <div class="service-icon">
             <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
               <circle cx="18" cy="18" r="6" />
@@ -180,87 +172,82 @@
     </div>
   </section>
 
-<section id="clients" class="clients fade-in">
-  <div class="container">
-    <div class="section-header">
-       <h4>Our Network</h4>
-      <h2>Trusted By</h2>
-    </div>
-    <div class="clients-carousel" aria-label="Client logos">
-      <div class="clients-wrapper">
-        <div class="clients-track">
-          <img src="assets/clients/_0023_aj.png" alt="Abdullatif Jameel" />
-          <img src="assets/clients/_0021_arabgt.png" alt="ArabGT" />
-          <img src="assets/clients/_0020_barbican.png" alt="Barbican" />
-          <img src="assets/clients/_0019_byd.png" alt="BYD" />
-          <img src="assets/clients/_0018_emiratesd.png" alt="Emirates Driving" />
-          <img src="assets/clients/_0017_eviq.png" alt="EVIQ" />
-          <img src="assets/clients/_0016_feynlab.png" alt="Feynlab" />
-          <img src="assets/clients/_0015_honor.png" alt="Honor" />
-          <img src="assets/clients/_0014_jameelms.png" alt="Jameel Motorsport" />
-          <img src="assets/clients/_0013_kumho.png" alt="Kumho" />
-          <img src="assets/clients/_0012_lotus.png" alt="Lotus" />
-          <img src="assets/clients/_0011_lynkco.png" alt="Lynk & Co" />
-          <img src="assets/clients/_0010_ram.png" alt="RAM" />
-          <img src="assets/clients/_0009_reelme.png" alt="Realme" />
-          <img src="assets/clients/_0008_samf.png" alt="Saudi Motorsport Federation" />
-          <img src="assets/clients/_0007_soueast.png" alt="Soueast" />
-          <img src="assets/clients/_0006_striveme.png" alt="StriveME" />
-          <img src="assets/clients/_0005_titaniumauto.png" alt="Titanium Automotive" />
-          <img src="assets/clients/_0004_tmdfriction.png" alt="TMD Friction" />
-          <img src="assets/clients/_0003_toyota.png" alt="Toyota" />
-          <img src="assets/clients/_0002_vipqs.png" alt="VIP Quick Service" />
-          <img src="assets/clients/_0001_volvo.png" alt="Volvo" />
-          <img src="assets/clients/_0000_zeetex.png" alt="Zeetex" />
-          <!-- Repeat for seamless loop -->
-          <img src="assets/clients/_0023_aj.png" alt="Abdullatif Jameel" />
-          <img src="assets/clients/_0021_arabgt.png" alt="ArabGT" />
-          <img src="assets/clients/_0020_barbican.png" alt="Barbican" />
-          <img src="assets/clients/_0019_byd.png" alt="BYD" />
-          <img src="assets/clients/_0018_emiratesd.png" alt="Emirates Driving" />
-          <img src="assets/clients/_0017_eviq.png" alt="EVIQ" />
-          <img src="assets/clients/_0016_feynlab.png" alt="Feynlab" />
-          <img src="assets/clients/_0015_honor.png" alt="Honor" />
-          <img src="assets/clients/_0014_jameelms.png" alt="Jameel Motorsport" />
-          <img src="assets/clients/_0013_kumho.png" alt="Kumho" />
-          <img src="assets/clients/_0012_lotus.png" alt="Lotus" />
-          <img src="assets/clients/_0011_lynkco.png" alt="Lynk & Co" />
-          <img src="assets/clients/_0010_ram.png" alt="RAM" />
-          <img src="assets/clients/_0009_reelme.png" alt="Realme" />
-          <img src="assets/clients/_0008_samf.png" alt="Saudi Motorsport Federation" />
-          <img src="assets/clients/_0007_soueast.png" alt="Soueast" />
-          <img src="assets/clients/_0006_striveme.png" alt="StriveME" />
-          <img src="assets/clients/_0005_titaniumauto.png" alt="Titanium Automotive" />
-          <img src="assets/clients/_0004_tmdfriction.png" alt="TMD Friction" />
-          <img src="assets/clients/_0003_toyota.png" alt="Toyota" />
-          <img src="assets/clients/_0002_vipqs.png" alt="VIP Quick Service" />
-          <img src="assets/clients/_0001_volvo.png" alt="Volvo" />
-          <img src="assets/clients/_0000_zeetex.png" alt="Zeetex" />
+  <section id="clients" class="clients fade-in">
+    <div class="container">
+      <div class="section-header">
+        <h4>Our Network</h4>
+        <h2>Trusted By</h2>
+      </div>
+      <div class="clients-carousel" aria-label="Client logos">
+        <div class="clients-wrapper">
+          <div class="clients-track">
+            <img src="assets/clients/_0023_aj.png" alt="Abdullatif Jameel" />
+            <img src="assets/clients/_0021_arabgt.png" alt="ArabGT" />
+            <img src="assets/clients/_0020_barbican.png" alt="Barbican" />
+            <img src="assets/clients/_0019_byd.png" alt="BYD" />
+            <img src="assets/clients/_0018_emiratesd.png" alt="Emirates Driving" />
+            <img src="assets/clients/_0017_eviq.png" alt="EVIQ" />
+            <img src="assets/clients/_0016_feynlab.png" alt="Feynlab" />
+            <img src="assets/clients/_0015_honor.png" alt="Honor" />
+            <img src="assets/clients/_0014_jameelms.png" alt="Jameel Motorsport" />
+            <img src="assets/clients/_0013_kumho.png" alt="Kumho" />
+            <img src="assets/clients/_0012_lotus.png" alt="Lotus" />
+            <img src="assets/clients/_0011_lynkco.png" alt="Lynk & Co" />
+            <img src="assets/clients/_0010_ram.png" alt="RAM" />
+            <img src="assets/clients/_0009_reelme.png" alt="Realme" />
+            <img src="assets/clients/_0008_samf.png" alt="Saudi Motorsport Federation" />
+            <img src="assets/clients/_0007_soueast.png" alt="Soueast" />
+            <img src="assets/clients/_0006_striveme.png" alt="StriveME" />
+            <img src="assets/clients/_0005_titaniumauto.png" alt="Titanium Automotive" />
+            <img src="assets/clients/_0004_tmdfriction.png" alt="TMD Friction" />
+            <img src="assets/clients/_0003_toyota.png" alt="Toyota" />
+            <img src="assets/clients/_0002_vipqs.png" alt="VIP Quick Service" />
+            <img src="assets/clients/_0001_volvo.png" alt="Volvo" />
+            <img src="assets/clients/_0000_zeetex.png" alt="Zeetex" />
+            <img src="assets/clients/_0023_aj.png" alt="Abdullatif Jameel" />
+            <img src="assets/clients/_0021_arabgt.png" alt="ArabGT" />
+            <img src="assets/clients/_0020_barbican.png" alt="Barbican" />
+            <img src="assets/clients/_0019_byd.png" alt="BYD" />
+            <img src="assets/clients/_0018_emiratesd.png" alt="Emirates Driving" />
+            <img src="assets/clients/_0017_eviq.png" alt="EVIQ" />
+            <img src="assets/clients/_0016_feynlab.png" alt="Feynlab" />
+            <img src="assets/clients/_0015_honor.png" alt="Honor" />
+            <img src="assets/clients/_0014_jameelms.png" alt="Jameel Motorsport" />
+            <img src="assets/clients/_0013_kumho.png" alt="Kumho" />
+            <img src="assets/clients/_0012_lotus.png" alt="Lotus" />
+            <img src="assets/clients/_0011_lynkco.png" alt="Lynk & Co" />
+            <img src="assets/clients/_0010_ram.png" alt="RAM" />
+            <img src="assets/clients/_0009_reelme.png" alt="Realme" />
+            <img src="assets/clients/_0008_samf.png" alt="Saudi Motorsport Federation" />
+            <img src="assets/clients/_0007_soueast.png" alt="Soueast" />
+            <img src="assets/clients/_0006_striveme.png" alt="StriveME" />
+            <img src="assets/clients/_0005_titaniumauto.png" alt="Titanium Automotive" />
+            <img src="assets/clients/_0004_tmdfriction.png" alt="TMD Friction" />
+            <img src="assets/clients/_0003_toyota.png" alt="Toyota" />
+            <img src="assets/clients/_0002_vipqs.png" alt="VIP Quick Service" />
+            <img src="assets/clients/_0001_volvo.png" alt="Volvo" />
+            <img src="assets/clients/_0000_zeetex.png" alt="Zeetex" />
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-
-
-  <!-- Projects -->
-<section id="projects" class="projects fade-in">
-  <div class="container">
-    <div class="section-header">
-      <h4>Recent Work</h4>
-      <h2>Featured Projects</h2>
+  <section id="projects" class="projects fade-in">
+    <div class="container">
+      <div class="section-header">
+        <h4>Recent Work</h4>
+        <h2>Featured Projects</h2>
+      </div>
+      <div class="projects-grid" id="projectsGrid"></div>
     </div>
-    <div class="projects-grid" id="projectsGrid"></div>
-  </div>
-</section>
+  </section>
 
-  <!-- Contact -->
   <section id="contact" class="contact fade-in">
     <div class="container">
       <div class="section-header with-subtitle">
         <h4>Contact</h4>
-        <h2>Let’s build your next launch together</h2>
+        <h2>Let's build your next launch together</h2>
         <p class="section-intro">Share a few details and our producers will respond within 24 hours with a tailored content roadmap.</p>
       </div>
 
@@ -298,8 +285,6 @@
               </div>
             </div>
           </div>
-
-          
         </div>
 
         <div class="contact-form-panel">
@@ -333,28 +318,15 @@
                 </select>
               </div>
             </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label for="budget">Estimated Budget</label>
-                <select id="budget" name="budget" required>
-                  <option value="" disabled selected>Select range</option>
-                  <option value="<25k">Below SAR 25K</option>
-                  <option value="25-75k">SAR 25K – 75K</option>
-                  <option value="75-150k">SAR 75K – 150K</option>
-                  <option value="150k-plus">Above SAR 150K</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="timeline">Ideal Timeline</label>
-                <input id="timeline" type="text" name="timeline" placeholder="e.g. Q1 2026" />
-              </div>
-            </div>
             <div class="form-group">
               <label for="message">Project Details</label>
               <textarea id="message" name="message" placeholder="Tell us about your goals, deliverables, and launch date." rows="5" required></textarea>
             </div>
             <div class="form-footer">
-              <button type="submit" class="submit-btn">Submit Brief</button>
+              <button type="submit" class="submit-btn">
+                <span>Submit Brief</span>
+                <i class="fas fa-paper-plane"></i>
+              </button>
               <p class="form-note">By submitting, you agree to our team contacting you about BX Media services.</p>
             </div>
           </form>
@@ -369,51 +341,38 @@
     </span>
   </a>
 
-  <!-- Footer -->
-<footer class="footer">
-  <div class="container">
-    <div class="footer-content">
-      <div class="footer-section">
-        <h3>BX Media</h3>
-        <p>We don’t just create content — we engineer experiences. At BX Media, every shot, story, and strategy is designed to amplify your brand, fuel engagement, and accelerate results.</p>
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3>BX Media</h3>
+          <p>We don't just create content — we engineer experiences. At BX Media, every shot, story, and strategy is designed to amplify your brand, fuel engagement, and accelerate results.</p>
+        </div>
+        <div class="footer-section">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#services">Services</a></li>
+            <li><a href="#projects">Projects</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ul>
+        </div>
       </div>
-      <div class="footer-section">
-        <h4>Quick Links</h4>
-        <ul>
-          <li><a href="#home">Home</a></li>
-          <li><a href="#about">About</a></li>
-          <li><a href="#services">Services</a></li>
-          <li><a href="#projects">Projects</a></li>
-          <li><a href="#contact">Contact</a></li>
-        </ul>
+      <div class="footer-bottom">
+        <div class="social-links centered">
+          <a href="https://www.instagram.com/bxm.auto" target="_blank" rel="noopener" aria-label="Follow BX Media on Instagram">
+            <i class="fa-brands fa-instagram" aria-hidden="true"></i>
+          </a>
+          <a href="https://www.linkedin.com/company/bxm-auto" target="_blank" rel="noopener" aria-label="Connect with BX Media on LinkedIn">
+            <i class="fa-brands fa-linkedin" aria-hidden="true"></i>
+          </a>
+        </div>
+        <p>&copy; 2025 BXM Media. All rights reserved.</p>
       </div>
     </div>
-    <div class="footer-bottom">
-      <div class="social-links centered">
-        <a href="https://www.instagram.com/bxm.auto" target="_blank" rel="noopener" aria-label="Follow BX Media on Instagram">
-          <i class="fa-brands fa-instagram" aria-hidden="true"></i>
-        </a>
-        <a href="https://www.linkedin.com/company/bxm-auto" target="_blank" rel="noopener" aria-label="Connect with BX Media on LinkedIn">
-          <i class="fa-brands fa-linkedin" aria-hidden="true"></i>
-        </a>
-      </div>
-      <p>&copy; 2025 BXM Media. All rights reserved.</p>
-    </div>
-  </div>
-</footer>
+  </footer>
 
-<script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-

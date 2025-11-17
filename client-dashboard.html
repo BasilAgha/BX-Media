@@ -10,33 +10,40 @@
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      referrerpolicy="no-referrer"
+    />
     <link rel="stylesheet" href="dashboard.css" />
   </head>
   <body class="dashboard-body">
     <div class="dashboard-shell">
       <aside class="dashboard-sidebar">
         <div class="dashboard-logo">
-          <img src="favicon.ico" alt="BX Media Logo" />
+          <img src="7 logo.png" alt="BX Media Logo" />
           <span>BX Media</span>
         </div>
         <nav class="dashboard-nav">
-          <a href="index.html">← Back to site</a>
+          <a href="index.html"><i class="fas fa-arrow-left"></i> Back to site</a>
           <button type="button" id="clientLogout" class="ghost-btn" style="display: none">
-            Log out
+            <i class="fas fa-sign-out-alt"></i> Log out
           </button>
         </nav>
       </aside>
       <main class="dashboard-content">
-        <section class="dashboard-panel" id="clientLoginView">
-          <h1>Client access</h1>
+        <section class="dashboard-panel fade-in" id="clientLoginView">
+          <h1><i class="fas fa-lock"></i> Client access</h1>
           <p class="helper-text">
             Sign in with the username and password shared by your BX Media account manager to
             view real-time progress for your active projects.
           </p>
-          <div class="alert error" id="clientLoginError">Invalid username or password. Please try again.</div>
+          <div class="alert error" id="clientLoginError">
+            <i class="fas fa-exclamation-circle"></i> Invalid username or password. Please try again.
+          </div>
           <form class="form-grid" id="clientLoginForm">
             <div class="form-row">
-              <label for="clientUsername">Username</label>
+              <label for="clientUsername"><i class="fas fa-user"></i> Username</label>
               <input
                 type="text"
                 id="clientUsername"
@@ -47,7 +54,7 @@
               />
             </div>
             <div class="form-row">
-              <label for="clientPassword">Password</label>
+              <label for="clientPassword"><i class="fas fa-key"></i> Password</label>
               <input
                 type="password"
                 id="clientPassword"
@@ -58,24 +65,28 @@
               />
             </div>
             <div class="form-row">
-              <label for="loginRole">Sign in as</label>
+              <label for="loginRole"><i class="fas fa-user-tag"></i> Sign in as</label>
               <select id="loginRole" name="role" required>
                 <option value="client" selected>Client</option>
                 <option value="admin">Admin</option>
               </select>
             </div>
-            <button type="submit" class="primary-btn">Access dashboard</button>
+            <button type="submit" class="primary-btn">
+              <i class="fas fa-sign-in-alt"></i> Access dashboard
+            </button>
           </form>
         </section>
 
-        <section class="dashboard-panel" id="clientDashboard" style="display: none">
+        <section class="dashboard-panel fade-in" id="clientDashboard" style="display: none">
           <header class="panel-header">
             <div class="panel-title">
-              <h1 id="clientGreeting">Welcome back!</h1>
+              <h1 id="clientGreeting"><i class="fas fa-hand-sparkles"></i> Welcome back!</h1>
               <p class="helper-text" id="clientSubtitle">Here is the latest on your active projects.</p>
             </div>
             <div class="panel-actions">
-              <button type="button" id="clientLogoutTop" class="ghost-btn">Log out</button>
+              <button type="button" id="clientLogoutTop" class="ghost-btn">
+                <i class="fas fa-sign-out-alt"></i> Log out
+              </button>
             </div>
           </header>
 
