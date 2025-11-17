@@ -1213,3 +1213,49 @@
     initAdminPage,
   };
 })();
+
+  // Overview stats update
+  function updateOverviewStats() {
+    const clients = loadClients();
+    let totalProjects = 0;
+    let totalTasks = 0;
+    let completedTasks = 0;
+
+    clients.forEach(client => {
+      if (Array.isArray(client.projects)) {
+        totalProjects += client.projects.length;
+        client.projects.forEach(project => {
+          if (Array.isArray(project.tasks)) {
+            totalTasks += project.tasks.length;
+            completedTasks += project.tasks.filter(t => t.status === 'completed').length;
+          }
+        });
+      }
+    });
+
+    const statClients = document.getElementById('statClients');
+    const statProjects = document.getElementById('statProjects');
+    const statTasks = document.getElementById('statTasks');
+    const statCompleted = document.getElementById('statCompleted');
+
+    if (statClients) statClients.textContent = clients.length;
+    if (statProjects) statProjects.textContent = totalProjects;
+    if (statTasks) statTasks.textContent = totalTasks;
+    if (statCompleted) statCompleted.textContent = completedTasks;
+  }
+
+  // Expose for external use
+  if (window.BXDashboard) {
+    window.BXDashboard.updateOverviewStats = updateOverviewStats;
+  }
+
+})();
+
+// Initialize overview stats when page loads
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    if (window.BXDashboard && window.BXDashboard.updateOverviewStats) {
+      window.BXDashboard.updateOverviewStats();
+    }
+  }, 500);
+});
