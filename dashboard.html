@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BX Media Dashboard</title>
+
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      referrerpolicy="no-referrer"
+    />
+
+    <!-- Shared dashboard styles -->
+    <link rel="stylesheet" href="dashboard.css" />
+  </head>
+  <body class="dashboard-body">
+    <div class="dashboard-shell">
+      <!-- Shared sidebar for both client & admin -->
+      <aside class="dashboard-sidebar">
+        <div class="dashboard-logo">
+          <img src="7 logo.png" alt="BX Media Logo" />
+          <span>BX Media</span>
+        </div>
+        <nav class="dashboard-nav">
+          <a href="index.html"><i class="fas fa-arrow-left"></i> Back to site</a>
+          <!-- Client logout (used on client view) -->
+          <button type="button" id="clientLogout" class="ghost-btn" style="display: none">
+            <i class="fas fa-sign-out-alt"></i> Log out
+          </button>
+          <!-- Admin logout (used on admin view) -->
+          <button type="button" id="adminLogout" class="ghost-btn" style="display: none">
+            <i class="fas fa-sign-out-alt"></i> Log out
+          </button>
+        </nav>
+      </aside>
+
+      <main class="dashboard-content">
+
+        <!-- ================= CLIENT LOGIN VIEW (from client-dashboard.html) ================= -->
+        <section class="dashboard-panel fade-in" id="clientLoginView">
+          <h1><i class="fas fa-lock"></i> Client access</h1>
+          <p class="helper-text">
+            Sign in with the username and password shared by your BX Media account manager to
+            view real-time progress for your active projects.
+          </p>
+          <div class="alert error" id="clientLoginError">
+            <i class="fas fa-exclamation-circle"></i> Invalid username or password. Please try again.
+          </div>
+          <form class="form-grid" id="clientLoginForm">
+            <div class="form-row">
+              <label for="clientUsername"><i class="fas fa-user"></i> Username</label>
+              <input
+                type="text"
+                id="clientUsername"
+                name="username"
+                autocomplete="username"
+                placeholder="your.username"
+                required
+              />
+            </div>
+            <div class="form-row">
+              <label for="clientPassword"><i class="fas fa-key"></i> Password</label>
+              <input
+                type="password"
+                id="clientPassword"
+                name="password"
+                autocomplete="current-password"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            <div class="form-row">
+              <label for="loginRole"><i class="fas fa-user-tag"></i> Sign in as</label>
+              <select id="loginRole" name="role" required>
+                <option value="client" selected>Client</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <button type="submit" class="primary-btn">
+              <i class="fas fa-sign-in-alt"></i> Access dashboard
+            </button>
+          </form>
+        </section>
+
+        <!-- ================= CLIENT DASHBOARD (from client-dashboard.html) ================= -->
+        <section class="dashboard-panel fade-in" id="clientDashboard" style="display: none">
+          <header class="panel-header">
+            <div class="panel-title">
+              <h1 id="clientGreeting"><i class="fas fa-hand-sparkles"></i> Welcome back!</h1>
+              <p class="helper-text" id="clientSubtitle">Here is the latest on your active projects.</p>
+            </div>
+            <div class="panel-actions">
+              <button type="button" id="clientLogoutTop" class="ghost-btn">
+                <i class="fas fa-sign-out-alt"></i> Log out
+              </button>
+            </div>
+          </header>
+
+          <section class="task-summary" id="clientSummary"></section>
+
+          <div id="clientProjects" class="project-grid section-stack"></div>
+          <div id="clientTasks" class="section-stack"></div>
+        </section>
+
+        <!-- ================= ADMIN SETUP VIEW (from admin-dashboard.html) ================= -->
+        <section class="dashboard-panel fade-in" id="adminSetupView" style="display: none">
+          <h1>Set up admin access</h1>
+          <p class="helper-text">
+            No admin account found. Create the first admin to manage clients and projects.
+          </p>
+          <div class="alert error" id="adminSetupError">Passwords do not match or are invalid.</div>
+          <form class="form-grid" id="adminSetupForm">
+            <div class="form-row">
+              <label for="setupAdminUsername">Admin username</label>
+              <input type="text" id="setupAdminUsername" name="username" placeholder="your.username" required />
+            </div>
+            <div class="form-row">
+              <label for="setupAdminPassword">Password</label>
+              <input type="password" id="setupAdminPassword" name="password" required />
+            </div>
+            <div class="form-row">
+              <label for="setupAdminPassword2">Confirm password</label>
+              <input type="password" id="setupAdminPassword2" name="password2" required />
+            </div>
+            <button type="submit" class="primary-btn">
+              <i class="fas fa-user-shield"></i> Create admin
+            </button>
+          </form>
+        </section>
+
+        <!-- ================= ADMIN DASHBOARD (from admin-dashboard.html) ================= -->
+        <section class="dashboard-panel fade-in" id="adminDashboard" style="display: none">
+          <header class="panel-header">
+            <div class="panel-title">
+              <h1>Project control center</h1>
+              <p class="helper-text">
+                Update milestones and progress for every client in one place. All changes sync instantly to
+                the client dashboard.
+              </p>
+            </div>
+            <div class="panel-actions">
+              <button type="button" id="resetDataBtn" class="ghost-btn" title="Clear all clients and projects">
+                <i class="fas fa-redo"></i> Reset data
+              </button>
+              <button type="button" id="deleteAdminBtn" class="danger-btn" title="Delete current admin">
+                <i class="fas fa-user-times"></i> Delete admin
+              </button>
+              <button type="button" id="adminLogoutTop" class="secondary-btn">
+                <i class="fas fa-sign-out-alt"></i> Log out
+              </button>
+            </div>
+          </header>
+
+          <section class="dashboard-panel panel-subtle fade-in">
+            <h2><i class="fas fa-users-cog"></i> Manage clients and projects</h2>
+            <div class="tab-controls">
+              <button type="button" id="tabExisting" class="secondary-btn tab-btn active">
+                <i class="fas fa-folder-open"></i> Existing client
+              </button>
+              <button type="button" id="tabNew" class="secondary-btn tab-btn">
+                <i class="fas fa-user-plus"></i> Add new client
+              </button>
+            </div>
+
+            <!-- Existing client / project management -->
+            <div id="existingClientPanel">
+              <div class="form-grid section-stack">
+                <div class="form-row">
+                  <label for="clientSelect"><i class="fas fa-user"></i> Client</label>
+                  <div class="field-with-action">
+                    <select id="clientSelect" required></select>
+                    <button type="button" id="deleteClientBtn" class="danger-btn" title="Delete client">
+                      <i class="fas fa-trash"></i> Delete
+                    </button>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <label for="projectSelect"><i class="fas fa-project-diagram"></i> Project</label>
+                  <div class="field-with-action">
+                    <select id="projectSelect"></select>
+                    <button type="button" id="deleteProjectBtn" class="danger-btn" title="Delete project">
+                      <i class="fas fa-trash"></i> Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Add project -->
+              <form class="form-grid section-stack" id="newProjectForm">
+                <div class="form-row">
+                  <label><i class="fas fa-heading"></i> Project name</label>
+                  <input type="text" name="name" placeholder="Campaign alpha" required />
+                </div>
+                <div class="form-row">
+                  <label><i class="fas fa-align-left"></i> Description</label>
+                  <textarea name="description" rows="2" placeholder="Short summary"></textarea>
+                </div>
+                <div class="form-row">
+                  <label><i class="fas fa-tasks"></i> Status</label>
+                  <select name="status" required>
+                    <option value="not-started">Not started</option>
+                    <option value="in-progress" selected>In progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="blocked">Blocked</option>
+                  </select>
+                </div>
+                <div class="form-row">
+                  <label><i class="fas fa-link"></i> Drive link</label>
+                  <input type="url" name="driveLink" placeholder="https://drive.google.com/..." />
+                </div>
+                <div class="inline-actions">
+                  <button type="submit" class="primary-btn">
+                    <i class="fas fa-plus-circle"></i> Add project
+                  </button>
+                </div>
+              </form>
+
+              <!-- Project meta -->
+              <div class="form-grid section-stack" id="projectMeta" style="display: none">
+                <div class="form-row">
+                  <label><i class="fas fa-link"></i> Drive link</label>
+                  <input type="url" id="projectDriveLink" placeholder="https://drive.google.com/..." />
+                </div>
+                <div class="form-row">
+                  <label><i class="fas fa-tasks"></i> Status</label>
+                  <select id="projectStatus">
+                    <option value="not-started">Not started</option>
+                    <option value="in-progress">In progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="blocked">Blocked</option>
+                  </select>
+                </div>
+                <div class="form-row">
+                  <label><i class="fas fa-chart-line"></i> Progress</label>
+                  <div class="inline-control">
+                    <input type="range" id="projectProgress" min="0" max="100" value="0" />
+                    <span id="projectProgressValue">0%</span>
+                  </div>
+                </div>
+                <div class="inline-actions">
+                  <button type="button" id="saveProjectMeta" class="secondary-btn">
+                    <i class="fas fa-save"></i> Save project
+                  </button>
+                </div>
+              </div>
+
+              <!-- Add task update -->
+              <form class="form-grid" id="newTaskForm">
+                <div class="form-row">
+                  <label for="taskTitle"><i class="fas fa-check-circle"></i> Task title</label>
+                  <input type="text" id="taskTitle" name="title" placeholder="Launch landing page" required />
+                </div>
+                <div class="form-row">
+                  <label for="taskDescription"><i class="fas fa-align-left"></i> Task description</label>
+                  <textarea id="taskDescription" name="description" rows="3" placeholder="Add clear next steps or deliverables"></textarea>
+                </div>
+                <div class="form-row">
+                  <label for="taskStatus"><i class="fas fa-info-circle"></i> Status</label>
+                  <select id="taskStatus" name="status" required>
+                    <option value="not-started">Not started</option>
+                    <option value="in-progress" selected>In progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="blocked">Blocked</option>
+                  </select>
+                </div>
+                <div class="form-row">
+                  <label for="taskProgress"><i class="fas fa-percentage"></i> Progress (%)</label>
+                  <input type="number" id="taskProgress" name="progress" min="0" max="100" value="25" required />
+                </div>
+                <div class="form-row">
+                  <label for="taskDueDate"><i class="fas fa-calendar-alt"></i> Target date</label>
+                  <input type="date" id="taskDueDate" name="dueDate" />
+                </div>
+                <button type="submit" class="primary-btn">
+                  <i class="fas fa-plus-circle"></i> Add task update
+                </button>
+              </form>
+              <div class="alert success" id="taskSuccess">
+                <i class="fas fa-check-circle"></i> Update saved.
+              </div>
+            </div>
+
+            <!-- New client panel -->
+            <div id="newClientPanel" style="display:none">
+              <form class="form-grid section-stack" id="newClientForm">
+                <div class="form-row">
+                  <label><i class="fas fa-building"></i> New client name</label>
+                  <input type="text" name="name" placeholder="Client name" required />
+                </div>
+                <div class="form-row">
+                  <label><i class="fas fa-user"></i> Client username</label>
+                  <input type="text" name="username" placeholder="client.username" required />
+                </div>
+                <div class="form-row">
+                  <label><i class="fas fa-lock"></i> Client password</label>
+                  <input type="password" name="password" placeholder="Password" required />
+                </div>
+                <button type="submit" class="primary-btn">
+                  <i class="fas fa-user-plus"></i> Create client
+                </button>
+              </form>
+              <p class="helper-text">
+                After creating a client, switch back to "Existing client" to add projects and updates.
+              </p>
+            </div>
+          </section>
+
+          <!-- Admin current workstream -->
+          <section class="dashboard-panel panel-subtle fade-in">
+            <h2><i class="fas fa-stream"></i> Current workstream</h2>
+            <div id="adminTaskList" class="task-admin-list"></div>
+          </section>
+
+          <!-- Admin comments -->
+          <section class="dashboard-panel panel-subtle fade-in">
+            <h2><i class="fas fa-comments"></i> Project comments</h2>
+            <div id="adminCommentsList" class="comment-list"></div>
+            <form class="form-grid section-stack" id="newCommentForm">
+              <div class="form-row">
+                <label for="commentText"><i class="fas fa-comment-dots"></i> Add comment</label>
+                <textarea id="commentText" rows="2" placeholder="Note for client (visible to client)"></textarea>
+              </div>
+              <div class="inline-actions">
+                <button type="submit" class="secondary-btn">
+                  <i class="fas fa-paper-plane"></i> Post comment
+                </button>
+              </div>
+            </form>
+          </section>
+
+          <!-- Admin client directory -->
+          <section class="dashboard-panel panel-subtle fade-in">
+            <h2><i class="fas fa-address-book"></i> Client directory</h2>
+            <p class="helper-text">Only the sole admin can view client credentials.</p>
+            <div id="clientDirectory"></div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <!-- Shared logic -->
+    <script src="dashboard.js"></script>
+    <script>
+      // On the unified page, we start from the client login (which also handles admin login)
+      document.addEventListener('DOMContentLoaded', () => {
+        if (window.BXDashboard && window.BXDashboard.initClientPage) {
+          window.BXDashboard.initClientPage();
+        }
+        // Do NOT call initAdminPage() directly here – it will be triggered after admin login.
+      });
+    </script>
+  </body>
+</html>

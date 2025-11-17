@@ -543,14 +543,25 @@
         const role = formData.get('role') || 'client';
 
         if (role === 'admin') {
-          if (await isAdminCredentials(username, password)) {
-            handleAdminLogin();
-            window.location.href = 'admin-dashboard.html';
-          } else {
-            showAlert(loginError, true);
-          }
-          return;
-        }
+  if (await isAdminCredentials(username, password)) {
+    handleAdminLogin();
+    showAlert(loginError, false);
+
+    // Hide client login, show admin interface on the same page
+    const loginView = document.getElementById('clientLoginView');
+    const clientDashboard = document.getElementById('clientDashboard');
+    if (loginView) loginView.style.display = 'none';
+    if (clientDashboard) clientDashboard.style.display = 'none';
+
+    if (window.BXDashboard && window.BXDashboard.initAdminPage) {
+      window.BXDashboard.initAdminPage();
+    }
+  } else {
+    showAlert(loginError, true);
+  }
+  return;
+}
+
 
         if (role === 'client') {
           const client = await getClientByCredentials(username, password);
@@ -851,18 +862,21 @@
     }
 
     // First-time admin setup or redirect if not logged in
-    const admins = loadAdmins();
-    if (!admins.length) {
-      setVisibility(loginView, false);
-      setVisibility(dashboardView, false);
-      setVisibility(setupView, true);
-    } else if (sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true') {
-      showDashboard();
-    } else {
-      // No admin session: use unified login on client dashboard
-      window.location.href = 'client-dashboard.html';
-      return;
-    }
+const admins = loadAdmins();
+if (!admins.length) {
+  // First-time: show admin setup on this same page
+  setVisibility(loginView, false);
+  setVisibility(dashboardView, false);
+  setVisibility(setupView, true);
+} else if (sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true') {
+  // Logged-in admin: show dashboard
+  showDashboard();
+} else {
+  // Not logged in as admin: do nothing here.
+  // Login is handled from the clientLoginView on the same page.
+  return;
+}
+
 
     if (setupForm) {
       setupForm.addEventListener('submit', async (e) => {
@@ -1143,14 +1157,16 @@
       });
     }
 
-    if (deleteAdminBtn) {
-      deleteAdminBtn.addEventListener('click', () => {
-        if (!confirm('Delete the current admin and return to setup?')) return;
-        saveAdmins([]);
-        handleAdminLogout();
-        window.location.href = 'admin-dashboard.html';
-      });
-    }
+if (deleteAdminBtn) {
+  deleteAdminBtn.addEventListener('click', () => {
+    if (!confirm('Delete the current admin and return to setup?')) return;
+    saveAdmins([]);
+    handleAdminLogout();
+    // Show setup view again on the same page
+    setVisibility(dashboardView, false);
+    setVisibility(setupView, true);
+  });
+}
 
     if (resetDataBtn) {
       resetDataBtn.addEventListener('click', () => {
@@ -1208,13 +1224,7 @@
     }
   }
 
-  window.BXDashboard = {
-    initClientPage,
-    initAdminPage,
-  };
-})();
-
-  // Overview stats update
+    // Overview stats update
   function updateOverviewStats() {
     const clients = loadClients();
     let totalProjects = 0;
@@ -1244,13 +1254,14 @@
     if (statCompleted) statCompleted.textContent = completedTasks;
   }
 
-  // Expose for external use
-  if (window.BXDashboard) {
-    window.BXDashboard.updateOverviewStats = updateOverviewStats;
-  }
-
+  // Expose all public functions
+  window.BXDashboard = {
+    initClientPage,
+    initAdminPage,
+    updateOverviewStats,
+  };
 })();
-
+ 
 // Initialize overview stats when page loads
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
