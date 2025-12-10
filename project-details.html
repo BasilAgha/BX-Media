@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Project Details - BX Media</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://player.vimeo.com/api/player.js"></script>
+  <style>
+    .project-detail-container {
+      max-width: 900px;
+      margin: 120px auto 60px;
+      padding: 0 20px;
+      animation: fadeIn 0.8s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .project-detail-container h1 {
+      color: #fff;
+      text-align: center;
+      margin-bottom: 0.75rem;
+      font-size: 2.5rem;
+      animation: slideDown 0.8s ease;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .project-detail-container > p {
+      max-width: 720px;
+      margin: 0 auto 2rem;
+      text-align: center;
+      color: #bbb;
+      line-height: 1.8;
+      animation: fadeIn 0.8s ease 0.2s backwards;
+    }
+
+    .project-detail-container h3 {
+      color: #fff;
+      text-align: center;
+      margin: 1.25rem auto 0.75rem;
+    }
+
+    .video-wrapper {
+      position: relative;
+      width: min(900px, 100%);
+      margin: 0 auto 24px;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      overflow: hidden;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      border: 2px solid #ff6600;
+      transition: all 0.4s ease;
+      animation: scaleIn 0.6s ease;
+    }
+
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .video-wrapper:hover {
+      border-color: #ffa64d;
+      box-shadow: 0 0 20px rgba(255, 102, 0, 0.6);
+      transform: scale(1.02);
+    }
+
+    .video-wrapper iframe {
+      position: absolute !important;
+      inset: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      border: 0 !important;
+    }
+
+    .video-wrapper.tall {
+      aspect-ratio: 9 / 16;
+      max-width: 400px;
+      margin: 0 auto 24px;
+    }
+
+    .video-gallery {
+      max-width: 980px;
+      margin: 24px auto 80px;
+      padding: 0 12px;
+      animation: fadeIn 1s ease 0.4s backwards;
+    }
+
+    .video-main {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .video-main .video-wrapper {
+      position: relative;
+      width: min(900px, 100%);
+      aspect-ratio: 16 / 9;
+      background: #000;
+      overflow: hidden;
+      border-radius: 12px;
+      border: 2px solid #ff6600;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      transition: all 0.4s ease;
+    }
+
+    .video-main .video-wrapper.tall {
+      aspect-ratio: 9 / 16;
+      width: min(540px, 100%);
+    }
+
+    .video-main .video-wrapper:hover {
+      border-color: #ffa64d;
+      box-shadow: 0 0 20px rgba(255, 102, 0, 0.6);
+      transform: scale(1.01);
+    }
+
+    .video-thumbs {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+      align-items: start;
+    }
+
+    .video-thumb {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border: 2px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      animation: thumbSlide 0.5s ease;
+      animation-delay: calc(var(--index) * 0.1s);
+      animation-fill-mode: backwards;
+    }
+
+    @keyframes thumbSlide {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .video-thumb.tall { 
+      aspect-ratio: 9 / 16; 
+    }
+
+    .video-thumb.is-active,
+    .video-thumb:hover {
+      border-color: #ff6600;
+      box-shadow: 0 0 15px rgba(255, 102, 0, 0.5);
+      transform: translateY(-4px);
+    }
+
+    .video-thumb iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      pointer-events: none;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 100px 0 30px;
+      padding: 12px 24px;
+      color: #fff;
+      background: linear-gradient(135deg, #ff6600, #ff914d);
+      border-radius: 30px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 20px rgba(255, 102, 0, 0.3);
+      animation: slideInLeft 0.6s ease;
+    }
+
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .back-link::before {
+      content: "←";
+      font-size: 1.2rem;
+      line-height: 1;
+      transition: transform 0.3s ease;
+    }
+
+    .back-link:hover {
+      background: linear-gradient(135deg, #ff914d, #ff6600);
+      transform: translateX(-5px);
+      box-shadow: 0 10px 25px rgba(255, 102, 0, 0.5);
+    }
+
+    .back-link:hover::before {
+      transform: translateX(-5px);
+    }
+
+    @media (max-width: 768px) {
+      .video-gallery { 
+        margin-bottom: 60px; 
+      }
+      
+      .video-thumbs {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+
+      .project-detail-container h1 {
+        font-size: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="index.html#projects" class="back-link">Back to Projects</a>
+    <section id="projectDetails" class="project-detail-container"></section>
+  </div>
+
+  <script>
+    const projectInfo = {
+      1: {
+        title: "Albassami × Seven Car Lounge",
+        description: "Directed a cinematic campaign documenting Albassami's transport sponsorship of a luxury car experience to AlUla and Umluj. The content emphasized Albassami's elite logistics capabilities — handling hypercars with precision — and was repurposed into short-form reels to maximize social reach.",
+        videos: [
+          { title: "Transport Campaign", src: "https://player.vimeo.com/video/1092452102?h=f81d9b7482", aspect: "landscape" },
+        ]
+      },
+      2: {
+        title: "ArabGT × SAMF",
+        description: "In partnership with ArabGT — the Middle East's top car channel — we covered the Saudi Toyota Championship for SAMF. Full YouTube video production led to over 1M+ organic views, amplifying the event's visibility and showcasing SAMF's motorsport leadership.",
+        videos: [
+          { title: "Highlight 1", src: "https://www.youtube.com/embed/R-_BKHgTp6I", aspect: "landscape" },
+          { title: "Highlight 2", src: "https://www.youtube.com/embed/l7JTF20I61s", aspect: "landscape" },
+          { title: "Highlight 3", src: "https://www.youtube.com/embed/aa3PCDk9OGE", aspect: "landscape" },
+          { title: "Highlight 4", src: "https://www.youtube.com/embed/Z7FxU4aSax4", aspect: "landscape" },
+          { title: "Highlight 5", src: "https://www.youtube.com/embed/n1HFC_kP714", aspect: "landscape" },
+          { title: "Highlight 6", src: "https://www.youtube.com/embed/Qt3HqroG7Ok", aspect: "landscape" },
+          { title: "Highlight 7", src: "https://www.youtube.com/embed/EnYfDxLs92c", aspect: "landscape" },
+          { title: "Highlight 8", src: "https://www.youtube.com/embed/DZv8pdh5wLw", aspect: "landscape" },
+          { title: "Highlight 9", src: "https://www.youtube.com/embed/-O2iWwcCcqg", aspect: "landscape" },
+        ]
+      },
+      3: {
+        title: "Hongqi × StriveME",
+        description: "Collaborated with StriveME to launch the Hongqi HS3 at Boulevard Riyadh. We delivered a series of cinematic reels that captured the car's bold entry into the Saudi market — driving brand buzz and engaging a luxury-focused audience.",
+        videos: [
+          { title: "Hongqi Reel 1", src: "https://player.vimeo.com/video/1102640419?h=450e9d6c88", aspect: "portrait" },
+          { title: "Hongqi Reel 2", src: "https://player.vimeo.com/video/1102639970?h=14791dfc05", aspect: "portrait" },
+          { title: "Hongqi Reel 3", src: "https://player.vimeo.com/video/1102639636?h=0cef0c92c1", aspect: "portrait" },
+        ]
+      },
+      4: {
+        title: "Toyota LC300 HEV MAX",
+        description: "Shot an off-road reel featuring the Toyota LC300 HEV MAX with influencer @SaudiStig. The video highlighted new features and rugged performance, generating strong engagement and boosting awareness of the model's hybrid innovation.",
+        videos: [
+          { title: "LC300 HEV Max Reel", src: "https://player.vimeo.com/video/1102642017?h=a2716a0e18", aspect: "portrait" },
+        ]
+      },
+      5: {
+        title: "Feynlab Riyadh Campaign",
+        description: "Produced a series of polished reels for Feynlab Riyadh, showcasing their premium detailing and protection services. The content positioned Feynlab as a trusted luxury care provider, directly contributing to increased customer traffic and online conversions.",
+        videos: [
+          { title: "BMW Motortech",  src: "https://player.vimeo.com/video/1102640728?h=7ff76f098f", aspect: "portrait" },
+          { title: "Feynlab Ferrari",src: "https://player.vimeo.com/video/1102637425?h=dd3a39df5e", aspect: "landscape" },
+          { title: "Ferrari Roma",   src: "https://player.vimeo.com/video/1102636864?h=c13ad6fcad", aspect: "landscape" },
+          { title: "Aston Martin",   src: "https://player.vimeo.com/video/1102637108?h=a7dd6aeeb0", aspect: "landscape" },
+          { title: "Green Urus",     src: "https://player.vimeo.com/video/1102637858?h=2c81b662ae", aspect: "portrait" },
+          { title: "Range Rover",    src: "https://player.vimeo.com/video/1102630788?h=1fcb041e2d", aspect: "landscape" },
+        ]
+      },
+      6: {
+        title: "VIP Quick Service",
+        description: "Produced a sleek package of high-quality automotive service reels for VIP Quick Service in Riyadh. The content reinforced their premium brand image, built trust with new customers, and elevated their digital presence.",
+        videos: [
+          { title: "VIP - Urus Final",     src: "https://player.vimeo.com/video/1102639250?h=4720133386", aspect: "landscape" },
+          { title: "VIP - Lamborghini",    src: "https://player.vimeo.com/video/1102639119?h=29fb53e2a6", aspect: "landscape" },
+          { title: "VIP - Grey Bentley",   src: "https://player.vimeo.com/video/1102638930?h=e62e7ca632", aspect: "landscape" },
+          { title: "VIP - Multi Car Shot", src: "https://player.vimeo.com/video/1102638172?h=029e5a39e9", aspect: "landscape" },
+        ]
+      }
+    };
+
+    function renderVideoGallery(container, videos) {
+      if (!videos || !videos.length) return;
+
+      const gallery = document.createElement('div');
+      gallery.className = 'video-gallery';
+
+      const titleEl = document.createElement('h3');
+      titleEl.style.textAlign = 'center';
+      titleEl.style.margin = '0 0 10px';
+      titleEl.style.color = '#fff';
+
+      const main = document.createElement('div');
+      main.className = 'video-main';
+
+      const thumbs = document.createElement('div');
+      thumbs.className = 'video-thumbs';
+      thumbs.setAttribute('aria-label', 'More videos');
+
+      gallery.appendChild(titleEl);
+      gallery.appendChild(main);
+      gallery.appendChild(thumbs);
+
+      let activeIndex = 0;
+
+      const buildIframe = (src) =>
+        `<iframe src="${src}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy" title="Video"></iframe>`;
+
+      function renderMain() {
+        const v = videos[activeIndex];
+        const tall = v.aspect === 'portrait' ? 'tall' : '';
+        titleEl.textContent = v.title || '';
+        main.innerHTML = `
+          <div class="video-wrapper ${tall}">
+            ${buildIframe(v.src)}
+          </div>
+        `;
+      }
+
+      function renderThumbs() {
+        thumbs.innerHTML = videos.map((v, i) => {
+          const tall = v.aspect === 'portrait' ? 'tall' : '';
+          const active = i === activeIndex ? 'is-active' : '';
+          return `
+            <button class="video-thumb ${tall} ${active}" data-index="${i}" aria-label="${v.title || 'Video'}" style="--index: ${i}">
+              ${buildIframe(v.src)}
+            </button>
+          `;
+        }).join('');
+      }
+
+      function attachThumbHandlers() {
+        thumbs.querySelectorAll('.video-thumb').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const i = Number(btn.dataset.index);
+            if (i === activeIndex) return;
+            activeIndex = i;
+            renderMain();
+            renderThumbs();
+            attachThumbHandlers();
+            if (window.matchMedia('(max-width: 768px)').matches) {
+              main.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          });
+        });
+      }
+
+      renderMain();
+      renderThumbs();
+      attachThumbHandlers();
+
+      container.appendChild(gallery);
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+    const data = projectInfo[id];
+
+    const container = document.getElementById("projectDetails");
+    if (data) {
+      container.innerHTML = `
+        <h1>${data.title}</h1>
+        <p>${data.description}</p>
+      `;
+      renderVideoGallery(container, data.videos);
+    } else {
+      container.innerHTML = "<p style='color: #fff; text-align: center;'>Project not found.</p>";
+    }
+  </script>
+</body>
+</html>
