@@ -3,7 +3,7 @@
 // Shared helpers: API, auth, utilities, sidebar wiring
 
 (function() {
-  const API_BASE = "https://script.google.com/macros/s/AKfycbyFiMCMGZMAFJTpORtauFS7AzmV_xZ2I4bE1_NnE7dDfLlQfo-tL7YZw5Cue2tQ2nCQJw/exec";
+  const API_BASE = "https://script.google.com/macros/s/AKfycbzNjg0iGqHY0vIIgjIId9eJElTC-wK42FKQYS7DBVAzJvQ-4YkRh_o1RPFtJhLpfi0OMg/exec";
   const SESSION_KEY = "bxm_dashboard_session_v1";
   let cachedData = null;
 
@@ -22,15 +22,22 @@
   }
 
   async function apiPost(payload) {
-    const res = await fetch(API_BASE, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) throw new Error("Request failed");
-    const json = await res.json();
-    return unwrapBody(json);
-  }
+  const res = await fetch(API_BASE, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) throw new Error("Request failed");
+
+  const json = await res.json();
+
+  // 🔥 Important: force cache refresh
+  cachedData = null;
+
+  return unwrapBody(json);
+}
+
+
 
   async function sha256(text) {
     if (!window.crypto?.subtle) return text;

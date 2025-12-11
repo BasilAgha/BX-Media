@@ -48,18 +48,26 @@
         <section class="subpanel">
           <h2><i class="fas fa-user-plus"></i> Add client</h2>
           <form id="addClientForm" class="form-grid">
-            <div class="form-row">
-              <label>Client name</label>
-              <input name="clientName" required />
-            </div>
-            <div class="form-row">
-              <label>Username (must match Accounts)</label>
-              <input name="username" required />
-            </div>
-            <button class="btn-primary" type="submit">
-              <i class="fas fa-plus-circle"></i> Add client
-            </button>
-          </form>
+  <div class="form-row">
+    <label>Client name</label>
+    <input name="clientName" required />
+  </div>
+
+  <div class="form-row">
+    <label>Username (must match Accounts)</label>
+    <input name="username" required />
+  </div>
+
+  <div class="form-row">
+    <label>Password</label>
+    <input name="password" type="password" required />
+  </div>
+
+  <button class="btn-primary" type="submit">
+    <i class="fas fa-plus-circle"></i> Add client
+  </button>
+</form>
+
           <div id="addClientStatus" class="alert alert-success" style="display:none">
             Client added successfully.
           </div>

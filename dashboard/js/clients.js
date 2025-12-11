@@ -1,10 +1,13 @@
-
 document.addEventListener("DOMContentLoaded", async () => {
+  // Require admin login
   const sess = BXCore.requireAuth({ role: "admin" });
   if (!sess) return;
 
   const statusEl = document.getElementById("addClientStatus");
 
+  /* ---------------------------------------------------------
+     RENDER CLIENTS TABLE
+  --------------------------------------------------------- */
   async function renderClients() {
     const data = await BXCore.apiGetAll(true);
     BXCore.updateSidebarStats(data);
@@ -23,6 +26,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const tableWrap = document.createElement("div");
     tableWrap.className = "table-wrapper";
+
     const table = document.createElement("table");
     table.innerHTML = `
       <thead>
@@ -36,6 +40,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       </thead>
       <tbody></tbody>
     `;
+
     const tbody = table.querySelector("tbody");
 
     clients.forEach((c) => {
@@ -59,6 +64,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       tbody.appendChild(tr);
     });
 
+    // Delete button handler
     table.addEventListener("click", async (e) => {
       const btn = e.target.closest("button[data-delete]");
       if (!btn) return;
@@ -69,6 +75,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       try {
         const resp = await BXCore.apiPost({ action: "deleteClient", clientId });
         if (resp && resp.error) throw new Error(resp.error);
+
+        // Refresh counters & table
+        const fresh = await BXCore.apiGetAll(true);
+        BXCore.updateSidebarStats(fresh);
+
         await renderClients();
       } catch (err) {
         console.error(err);
@@ -80,14 +91,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     wrapper.appendChild(tableWrap);
   }
 
+  /* ---------------------------------------------------------
+     ADD CLIENT HANDLER
+  --------------------------------------------------------- */
   document.getElementById("addClientForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     if (statusEl) statusEl.style.display = "none";
 
     const fd = new FormData(e.target);
+
     const clientName = String(fd.get("clientName") || "").trim();
     const username = String(fd.get("username") || "").trim();
-    if (!clientName || !username) return;
+    const password = String(fd.get("password") || "").trim();
+
+    if (!clientName || !username || !password) {
+      alert("Please fill in all fields.");
+      return;
+    }
 
     const clientId = "client_" + Date.now();
 
@@ -97,15 +117,24 @@ document.addEventListener("DOMContentLoaded", async () => {
         clientId,
         clientName,
         username,
+        password
       });
+
       if (resp && resp.error) throw new Error(resp.error);
 
       e.target.reset();
+
       if (statusEl) {
         statusEl.textContent = "Client added successfully.";
         statusEl.style.display = "block";
         setTimeout(() => (statusEl.style.display = "none"), 2000);
       }
+
+      // 🔥 Refresh sidebar counters
+      const fresh = await BXCore.apiGetAll(true);
+      BXCore.updateSidebarStats(fresh);
+
+      // Refresh table
       await renderClients();
     } catch (err) {
       console.error(err);
@@ -113,5 +142,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+  /* ---------------------------------------------------------
+     INITIAL LOAD
+  --------------------------------------------------------- */
   renderClients();
 });
