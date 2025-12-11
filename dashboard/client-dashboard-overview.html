@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>BX Media — Client Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+</head>
+
+<body>
+<div class="shell shell-multi">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <img src="../assets/index/7 logo.png" alt="BX Media" />
+      <span>BX Media</span>
+    </div>
+
+    <div class="sidebar-section-title">Navigation</div>
+    <nav class="nav">
+      <a href="client-dashboard-overview.html" id="navOverview">Overview</a>
+      <a href="client-dashboard-projects.html" id="navProjectsLink">Projects</a>
+      <a href="client-dashboard-tasks.html" id="navTasksLink">Tasks</a>
+      <button id="logoutBtn">Log out</button>
+    </nav>
+
+    <div class="sidebar-section-title stats-title">Overview</div>
+    <div class="sidebar-stats-grid">
+      <div class="stat-card"><span>Total projects</span><strong id="statTotalProjects">0</strong></div>
+      <div class="stat-card"><span>Total tasks</span><strong id="statTotalTasks">0</strong></div>
+      <div class="stat-card"><span>In progress</span><strong id="statInProgress">0</strong></div>
+      <div class="stat-card"><span>Completed</span><strong id="statCompleted">0</strong></div>
+      <div class="stat-card"><span>Not started</span><strong id="statNotStarted">0</strong></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="content">
+    
+    <section class="panel">
+      <header class="panel-header">
+        <div>
+          <h1 id="overviewTitle">Loading...</h1>
+          <p id="overviewSubtitle">Please wait</p>
+        </div>
+      </header>
+
+      <!-- SUMMARY -->
+      <section class="subpanel">
+        <h2>Summary</h2>
+        <div id="overviewSummary"></div>
+      </section>
+
+      <!-- CLIENT PROJECTS -->
+      <section class="subpanel">
+        <h2>Your Projects</h2>
+        <div id="overviewProjects"></div>
+      </section>
+
+      <!-- CLIENT TASKS -->
+      <section class="subpanel">
+        <h2>Latest Tasks</h2>
+        <div id="overviewTasks"></div>
+      </section>
+
+    </section>
+
+  </main>
+</div>
+
+<script src="js/dashboard-core.js"></script>
+<script src="js/overview.js"></script>
+</body>
+</html>

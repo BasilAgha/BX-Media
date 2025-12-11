@@ -72,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
         clientName: client.clientName
       });
 
-      window.location.href = "dashboard-overview.html";
+      window.location.href = "client-dashboard-overview.html";
 
     } catch (err) {
       console.error(err);

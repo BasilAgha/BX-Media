@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>BX Media — Client Projects</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+</head>
+
+<body>
+<div class="shell shell-multi">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <img src="../assets/index/7 logo.png" alt="BX Media" />
+      <span>BX Media</span>
+    </div>
+
+    <div class="sidebar-section-title">Navigation</div>
+    <nav class="nav">
+      <a href="client-dashboard-overview.html">Overview</a>
+      <a href="client-dashboard-projects.html" class="active">Projects</a>
+      <a href="client-dashboard-tasks.html">Tasks</a>
+      <button id="logoutBtn">Log out</button>
+    </nav>
+
+    <div class="sidebar-section-title stats-title">Overview</div>
+    <div class="sidebar-stats-grid">
+      <div class="stat-card"><span>Total projects</span><strong id="statTotalProjects">0</strong></div>
+      <div class="stat-card"><span>Total tasks</span><strong id="statTotalTasks">0</strong></div>
+      <div class="stat-card"><span>In progress</span><strong id="statInProgress">0</strong></div>
+      <div class="stat-card"><span>Completed</span><strong id="statCompleted">0</strong></div>
+      <div class="stat-card"><span>Not started</span><strong id="statNotStarted">0</strong></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="content">
+    <section class="panel">
+      
+      <header class="panel-header">
+        <div>
+          <h1>Your Projects</h1>
+        </div>
+      </header>
+
+      <section class="subpanel">
+        <h2>Projects</h2>
+        <div id="projectsList"></div>
+      </section>
+
+    </section>
+  </main>
+
+</div>
+
+<script src="js/dashboard-core.js"></script>
+
+<!-- REUSE PROJECT JS BUT IN VIEW MODE ONLY -->
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  
+  const sess = BXCore.requireAuth();
+  if (!sess) return;
+
+  const data = await BXCore.apiGetAll(true);
+  BXCore.updateSidebarStats(data);
+
+  const projectsList = document.getElementById("projectsList");
+  const projects = data.projects.filter(p => p.clientId === sess.clientId);
+  const tasks = data.tasks;
+
+  projectsList.innerHTML = "";
+
+  if (!projects.length) {
+    projectsList.innerHTML = '<div class="empty">No projects yet.</div>';
+    return;
+  }
+
+  projects.forEach(p => {
+    const taskList = tasks.filter(t => t.projectId === p.projectId);
+    const progress = BXCore.computeProjectProgress(taskList);
+
+    const card = document.createElement("article");
+    card.className = "project-card";
+    card.innerHTML = `
+      <header>
+        <div>
+          <h3>${p.name}</h3>
+          <p class="project-desc">${p.description || ""}</p>
+        </div>
+        <span class="badge ${p.status}">${p.status.replace("-", " ")}</span>
+      </header>
+
+      <div class="project-meta">
+        <div style="flex:1">
+          <progress max="100" value="${progress}"></progress>
+        </div>
+        <span class="progress-label">${progress}%</span>
+        ${p.driveLink ? `<a class="ghost" href="${p.driveLink}" target="_blank">Drive</a>` : ""}
+      </div>
+
+      <div class="project-desc" style="font-size:0.8rem;margin-top:0.3rem;">
+        ${taskList.length} tasks
+      </div>
+    `;
+    projectsList.appendChild(card);
+  });
+
+});
+</script>
+
+</body>
+</html>

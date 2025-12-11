@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>BX Media — Client Tasks</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+</head>
+
+<body>
+
+<div class="shell shell-multi">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <img src="../assets/index/7 logo.png" alt="BX Media" />
+      <span>BX Media</span>
+    </div>
+
+    <div class="sidebar-section-title">Navigation</div>
+    <nav class="nav">
+      <a href="client-dashboard-overview.html"><i class="fas fa-grid-2"></i> Overview</a>
+      <a href="client-dashboard-projects.html"><i class="fas fa-diagram-project"></i> Projects</a>
+      <a href="client-dashboard-tasks.html" class="active"><i class="fas fa-list-check"></i> Tasks</a>
+      <button id="logoutBtn"><i class="fas fa-arrow-right-from-bracket"></i> Log out</button>
+    </nav>
+
+    <div class="sidebar-section-title stats-title">Overview</div>
+    <div class="sidebar-stats-grid">
+      <div class="stat-card"><span>Total projects</span><strong id="statTotalProjects">0</strong></div>
+      <div class="stat-card"><span>Total tasks</span><strong id="statTotalTasks">0</strong></div>
+      <div class="stat-card"><span>In progress</span><strong id="statInProgress">0</strong></div>
+      <div class="stat-card"><span>Completed</span><strong id="statCompleted">0</strong></div>
+      <div class="stat-card"><span>Not started</span><strong id="statNotStarted">0</strong></div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="content">
+
+    <section class="panel">
+      <header class="panel-header">
+        <h1>Your Tasks</h1>
+        <p>All tasks assigned to your projects</p>
+      </header>
+
+      <!-- TASKS TABLE -->
+      <section class="subpanel">
+        <h2><i class="fas fa-table"></i> Tasks</h2>
+        <div id="tasksTableWrapper"></div>
+      </section>
+    </section>
+
+  </main>
+
+</div>
+
+<script src="js/dashboard-core.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  const sess = BXCore.requireAuth(); // client allowed
+  if (!sess) return;
+
+  const wrapper = document.getElementById("tasksTableWrapper");
+
+  // Load all data
+  const data = await BXCore.apiGetAll(true);
+  BXCore.updateSidebarStats(data);
+
+  // Filter only client projects
+  const projects = data.projects.filter(p => p.clientId === sess.clientId);
+  const projectIds = projects.map(p => p.projectId);
+
+  // Filter tasks belonging ONLY to client's projects
+  const tasks = data.tasks.filter(t => projectIds.includes(t.projectId));
+
+  if (!tasks.length) {
+    wrapper.innerHTML = '<div class="empty">No tasks available yet.</div>';
+    return;
+  }
+
+  const wrap = document.createElement("div");
+  wrap.className = "table-wrapper";
+
+  const table = document.createElement("table");
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>Task</th>
+        <th>Description</th>
+        <th>Status</th>
+        <th>Progress</th>
+        <th>Due</th>
+        <th>Updated</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  `;
+
+  const tbody = table.querySelector("tbody");
+
+  tasks
+    .slice()
+    .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))
+    .forEach(t => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${t.title || ""}</td>
+        <td>${t.description || ""}</td>
+        <td><span class="badge ${t.status}">${t.status.replace("-", " ")}</span></td>
+        <td>${t.progress || 0}%</td>
+        <td>${BXCore.formatDate(t.dueDate)}</td>
+        <td>${BXCore.formatDateTime(t.updatedAt)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+  wrap.appendChild(table);
+  wrapper.appendChild(wrap);
+});
+</script>
+
+</body>
+</html>
