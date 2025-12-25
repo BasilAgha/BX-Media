@@ -36,6 +36,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let clients = data.clients || [];
   let projects = data.projects || [];
   let tasks = data.tasks || [];
+  let projectActionsBound = false;
 
   function populateClientSelects() {
     clientFilterSelect.innerHTML = '<option value="all">All clients</option>';
@@ -78,6 +79,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const card = document.createElement("article");
       card.className = "project-card";
+      card.dataset.projectId = p.projectId;
       card.innerHTML = `
         <header>
           <div>
@@ -105,9 +107,83 @@ document.addEventListener("DOMContentLoaded", async () => {
         <div class="project-desc" style="font-size:0.8rem;margin-top:0.3rem;">
           ${pTasks.length} tasks
         </div>
+        <div class="project-edit">
+          <div class="project-edit-title">Edit project</div>
+          <div class="project-edit-grid">
+            <div class="form-row">
+              <label>Name</label>
+              <input class="admin-project-name" value="${p.name || ""}" />
+            </div>
+            <div class="form-row">
+              <label>Description</label>
+              <textarea class="admin-project-desc" rows="2">${p.description || ""}</textarea>
+            </div>
+            <div class="form-row">
+              <label>Status</label>
+              <select class="admin-project-status">
+                <option value="not-started" ${p.status === "not-started" ? "selected" : ""}>Not started</option>
+                <option value="in-progress" ${p.status === "in-progress" ? "selected" : ""}>In progress</option>
+                <option value="completed" ${p.status === "completed" ? "selected" : ""}>Completed</option>
+                <option value="blocked" ${p.status === "blocked" ? "selected" : ""}>Blocked</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>Drive link</label>
+              <input class="admin-project-drive" type="url" value="${p.driveLink || ""}" placeholder="https://drive.google.com/..." />
+            </div>
+          </div>
+          <div class="project-edit-actions">
+            <button class="btn-secondary admin-project-save" type="button">Save changes</button>
+          </div>
+        </div>
       `;
       projectsList.appendChild(card);
     });
+
+    if (!projectActionsBound) {
+      projectActionsBound = true;
+      projectsList.addEventListener("click", async (e) => {
+        const saveBtn = e.target.closest(".admin-project-save");
+        if (!saveBtn) return;
+        const card = e.target.closest(".project-card");
+        if (!card) return;
+        const projectId = card.dataset.projectId;
+        const nameInput = card.querySelector(".admin-project-name");
+        const descInput = card.querySelector(".admin-project-desc");
+        const statusSelect = card.querySelector(".admin-project-status");
+        const driveInput = card.querySelector(".admin-project-drive");
+
+        if (!nameInput.value.trim()) {
+          showActionStatus("Project name is required.", "error");
+          return;
+        }
+
+        BXCore.setButtonLoading(saveBtn, true, "Saving...");
+        try {
+          await BXCore.apiPost({
+            action: "updateProject",
+            projectId,
+            name: nameInput.value.trim(),
+            description: descInput.value.trim(),
+            status: statusSelect.value,
+            driveLink: driveInput.value.trim(),
+            updatedAt: new Date().toISOString(),
+          });
+          data = await BXCore.apiGetAll(true);
+          BXCore.updateSidebarStats(data);
+          clients = data.clients || [];
+          projects = data.projects || [];
+          tasks = data.tasks || [];
+          renderProjects();
+          showActionStatus("Project updated successfully.", "success");
+        } catch (err) {
+          console.error(err);
+          showActionStatus("Couldn't update the project. Please try again.", "error");
+        } finally {
+          BXCore.setButtonLoading(saveBtn, false);
+        }
+      });
+    }
   }
 
   clientFilterSelect.addEventListener("change", renderProjects);

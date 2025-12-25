@@ -4,15 +4,27 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const titleEl = document.getElementById("overviewTitle");
   const subtitleEl = document.getElementById("overviewSubtitle");
-  const statusEl = document.getElementById("overviewStatus");
   const summaryEl = document.getElementById("overviewSummary");
   const projectsEl = document.getElementById("overviewProjects");
   const tasksEl = document.getElementById("overviewTasks");
+  const isClientView = !!document.getElementById("overviewActiveProjects");
+  const activeProjectsEl = document.getElementById("overviewActiveProjects") || projectsEl;
+  const activityEl = document.getElementById("overviewActivity") || tasksEl;
 
   const renderTimeline = (items, projects, clients) => {
-    tasksEl.innerHTML = "";
+    if (!activityEl) return;
+    activityEl.innerHTML = "";
     if (!items.length) {
-      tasksEl.innerHTML = '<div class="empty">No updates yet. Check back later for activity.</div>';
+      activityEl.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon"><i class="fas fa-clock"></i></div>
+          <div>
+            <h3>No recent activity</h3>
+            <p>Updates will appear here as BX Media moves your work forward.</p>
+            <p class="empty-hint">Next step: check back after the next status update.</p>
+          </div>
+        </div>
+      `;
       return;
     }
 
@@ -50,52 +62,102 @@ document.addEventListener("DOMContentLoaded", async () => {
         timeline.appendChild(item);
       });
 
-    tasksEl.appendChild(timeline);
+    activityEl.appendChild(timeline);
+  };
+
+  const renderSummaryCards = (cards) => {
+    if (!summaryEl) return;
+    summaryEl.innerHTML = "";
+    cards.forEach(({ label, value, icon, tone, helper }) => {
+      const showEmpty = Number(value) === 0;
+      const div = document.createElement("div");
+      div.className = `summary-card ${tone}`;
+      div.innerHTML = `
+        <span class="summary-icon"><i class="${icon}"></i></span>
+        <div>
+          <span>${label}</span>
+          <strong>${showEmpty ? "—" : value}</strong>
+          ${showEmpty ? `<span class="summary-helper">${helper}</span>` : ""}
+        </div>
+      `;
+      summaryEl.appendChild(div);
+    });
   };
 
   try {
-    BXCore.renderSkeleton(summaryEl, "summary", 5);
-    BXCore.renderSkeleton(projectsEl, "card", 3);
-    BXCore.renderSkeleton(tasksEl, "timeline", 4);
+    BXCore.renderSkeleton(summaryEl, "summary", 4);
+    BXCore.renderSkeleton(activeProjectsEl, "card", 3);
+    BXCore.renderSkeleton(activityEl, "timeline", 4);
 
     const data = await BXCore.apiGetAll();
     BXCore.updateSidebarStats(data);
+    BXCore.renderClientHeader(data.clients || []);
 
     const clients = data.clients || [];
     const projects = data.projects || [];
     const tasks = data.tasks || [];
 
     if (sess.role === "admin") {
-      if (titleEl) titleEl.textContent = "Project control center";
+      if (titleEl) titleEl.textContent = "Dashboard";
       if (subtitleEl)
         subtitleEl.textContent = "High-level view of all clients, projects, and task progress.";
 
-      const summary = BXCore.computeSummary(tasks);
-      summaryEl.innerHTML = "";
-      const cards = [
-        ["Total projects", projects.length],
-        ["Total tasks", summary.total],
-        ["In progress", summary.inProgress],
-        ["Completed", summary.completed],
-        ["Not started", summary.notStarted],
-      ];
-      cards.forEach(([label, value]) => {
-        const div = document.createElement("div");
-        div.className = "summary-card";
-        div.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
-        summaryEl.appendChild(div);
-      });
+      const summary = BXCore.computeProjectSummary(projects);
+      renderSummaryCards([
+        {
+          label: "Total projects",
+          value: projects.length,
+          icon: "fas fa-folder-open",
+          tone: "neutral",
+          helper: "No active projects yet.",
+        },
+        {
+          label: "In progress",
+          value: summary.inProgress,
+          icon: "fas fa-bolt",
+          tone: "in-progress",
+          helper: "No work in motion yet.",
+        },
+        {
+          label: "Completed",
+          value: summary.completed,
+          icon: "fas fa-check",
+          tone: "completed",
+          helper: "No completed work yet.",
+        },
+        {
+          label: "Not started",
+          value: summary.notStarted,
+          icon: "fas fa-pause",
+          tone: "not-started",
+          helper: "No queued work yet.",
+        },
+      ]);
 
-      projectsEl.innerHTML = "";
-      if (!projects.length) {
-        projectsEl.innerHTML = '<div class="empty">No projects yet.</div>';
-      } else {
-        projects.forEach((p) => {
+      if (activeProjectsEl) activeProjectsEl.innerHTML = "";
+      const projectList = isClientView
+        ? projects.filter((p) => (p.status || "in-progress") !== "completed")
+        : projects;
+      if (!projectList.length && activeProjectsEl) {
+        activeProjectsEl.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon"><i class="fas fa-layer-group"></i></div>
+            <div>
+              <h3>No projects yet</h3>
+              <p>Projects will appear here once they are created.</p>
+              <p class="empty-hint">Next step: add a project to begin tracking.</p>
+            </div>
+          </div>
+        `;
+      } else if (activeProjectsEl) {
+        projectList.forEach((p) => {
           const pTasks = tasks.filter((t) => t.projectId === p.projectId);
           const progress = BXCore.computeProjectProgress(pTasks);
           const client = clients.find((c) => c.clientId === p.clientId);
           const updatedLabel = BXCore.formatDateTime(p.updatedAt || p.createdAt) || "Not updated yet";
 
+          const progressLabel = progress === 0 ? "—" : `${progress}%`;
+          const progressHelper = progress === 0 ? "No tasks yet" : "";
           const card = document.createElement("article");
           card.className = "project-card";
           card.innerHTML = `
@@ -109,14 +171,17 @@ document.addEventListener("DOMContentLoaded", async () => {
                 <p class="project-meta-line">Updated: ${updatedLabel}</p>
               </div>
               <span class="badge ${p.status || "in-progress"}">
-                Status: ${(p.status || "in-progress").replace("-", " ")}
+                ${(p.status || "in-progress").replace("-", " ")}
               </span>
             </header>
             <div class="project-meta">
               <div style="flex:1">
                 <progress max="100" value="${progress}"></progress>
               </div>
-              <span class="progress-label">${progress}%</span>
+              <div class="progress-stack">
+                <span class="progress-label">${progressLabel}</span>
+                ${progressHelper ? `<span class="progress-helper">${progressHelper}</span>` : ""}
+              </div>
               ${
                 p.driveLink
                   ? `<a class="ghost" href="${p.driveLink}" target="_blank" rel="noopener">Drive</a>`
@@ -124,7 +189,7 @@ document.addEventListener("DOMContentLoaded", async () => {
               }
             </div>
           `;
-          projectsEl.appendChild(card);
+          activeProjectsEl.appendChild(card);
         });
       }
 
@@ -134,43 +199,72 @@ document.addEventListener("DOMContentLoaded", async () => {
         clients.find((c) => c.clientId === sess.clientId) ||
         clients.find((c) => c.username === sess.username);
 
-      if (titleEl)
-        titleEl.textContent = client
-          ? `Welcome back, ${client.clientName || sess.username}`
-          : `Welcome back, ${sess.username}`;
+      if (titleEl) titleEl.textContent = "Dashboard";
       if (subtitleEl)
-        subtitleEl.textContent = "Here's the latest on your active BX Media projects.";
+        subtitleEl.textContent = client
+          ? `Welcome back, ${client.clientName || sess.username}.`
+          : `Welcome back, ${sess.username}.`;
 
       const clientProjects = projects.filter((p) => p.clientId === client?.clientId);
       const clientTasks = tasks.filter((t) =>
         clientProjects.some((p) => p.projectId === t.projectId)
       );
 
-      const summary = BXCore.computeSummary(clientTasks);
-      summaryEl.innerHTML = "";
-      const cards = [
-        ["Total projects", clientProjects.length],
-        ["Total tasks", summary.total],
-        ["In progress", summary.inProgress],
-        ["Completed", summary.completed],
-        ["Not started", summary.notStarted],
-      ];
-      cards.forEach(([label, value]) => {
-        const div = document.createElement("div");
-        div.className = "summary-card";
-        div.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
-        summaryEl.appendChild(div);
-      });
+      const summary = BXCore.computeProjectSummary(clientProjects);
+      renderSummaryCards([
+        {
+          label: "Total projects",
+          value: clientProjects.length,
+          icon: "fas fa-folder-open",
+          tone: "neutral",
+          helper: "No active projects yet.",
+        },
+        {
+          label: "In progress",
+          value: summary.inProgress,
+          icon: "fas fa-bolt",
+          tone: "in-progress",
+          helper: "No work in motion yet.",
+        },
+        {
+          label: "Completed",
+          value: summary.completed,
+          icon: "fas fa-check",
+          tone: "completed",
+          helper: "No completed work yet.",
+        },
+        {
+          label: "Not started",
+          value: summary.notStarted,
+          icon: "fas fa-pause",
+          tone: "not-started",
+          helper: "No queued work yet.",
+        },
+      ]);
 
-      projectsEl.innerHTML = "";
-      if (!clientProjects.length) {
-        projectsEl.innerHTML = '<div class="empty">No projects yet.</div>';
-      } else {
-        clientProjects.forEach((p) => {
+      if (activeProjectsEl) activeProjectsEl.innerHTML = "";
+      const activeProjects = clientProjects.filter(
+        (p) => (p.status || "in-progress") !== "completed"
+      );
+      if (!activeProjects.length && activeProjectsEl) {
+        activeProjectsEl.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon"><i class="fas fa-layer-group"></i></div>
+            <div>
+              <h3>No active projects</h3>
+              <p>Once work begins, active projects will appear here.</p>
+              <p class="empty-hint">Next step: confirm next steps with your BX Media team.</p>
+            </div>
+          </div>
+        `;
+      } else if (activeProjectsEl) {
+        activeProjects.forEach((p) => {
           const pTasks = clientTasks.filter((t) => t.projectId === p.projectId);
           const progress = BXCore.computeProjectProgress(pTasks);
           const updatedLabel = BXCore.formatDateTime(p.updatedAt || p.createdAt) || "Not updated yet";
 
+          const progressLabel = progress === 0 ? "—" : `${progress}%`;
+          const progressHelper = progress === 0 ? "No tasks yet" : "";
           const card = document.createElement("article");
           card.className = "project-card";
           card.innerHTML = `
@@ -181,14 +275,17 @@ document.addEventListener("DOMContentLoaded", async () => {
                 <p class="project-meta-line">Updated: ${updatedLabel}</p>
               </div>
               <span class="badge ${p.status || "in-progress"}">
-                Status: ${(p.status || "in-progress").replace("-", " ")}
+                ${(p.status || "in-progress").replace("-", " ")}
               </span>
             </header>
             <div class="project-meta">
               <div style="flex:1">
                 <progress max="100" value="${progress}"></progress>
               </div>
-              <span class="progress-label">${progress}%</span>
+              <div class="progress-stack">
+                <span class="progress-label">${progressLabel}</span>
+                ${progressHelper ? `<span class="progress-helper">${progressHelper}</span>` : ""}
+              </div>
               ${
                 p.driveLink
                   ? `<a class="ghost" href="${p.driveLink}" target="_blank" rel="noopener">Drive</a>`
@@ -196,7 +293,7 @@ document.addEventListener("DOMContentLoaded", async () => {
               }
             </div>
           `;
-          projectsEl.appendChild(card);
+          activeProjectsEl.appendChild(card);
         });
       }
 
@@ -206,10 +303,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error(err);
     if (subtitleEl) {
       subtitleEl.textContent = "Failed to load data. Please refresh and try again.";
-    }
-    if (statusEl) {
-      statusEl.textContent = "Failed to load data. Please refresh and try again.";
-      statusEl.style.display = "block";
     }
   }
 });

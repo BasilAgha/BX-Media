@@ -15,7 +15,10 @@
       loader.id = "pageLoader";
       loader.className = "page-loader";
       loader.innerHTML = `
-        <div class="spinner" aria-hidden="true"></div>
+        <div class="loader-skeleton" aria-hidden="true">
+          <div class="skeleton skeleton-line" style="width:48%"></div>
+          <div class="loader-bar"></div>
+        </div>
         <div class="message" role="status" aria-live="polite">Loading...</div>
       `;
       document.body.appendChild(loader);
@@ -155,6 +158,24 @@
     return Math.round(sum / values.length);
   }
 
+  function computeProjectSummary(projects) {
+    const summary = {
+      total: projects.length,
+      completed: 0,
+      inProgress: 0,
+      notStarted: 0,
+      blocked: 0,
+    };
+    (projects || []).forEach((p) => {
+      const s = p.status || "not-started";
+      if (s === "completed") summary.completed++;
+      else if (s === "in-progress") summary.inProgress++;
+      else if (s === "blocked") summary.blocked++;
+      else summary.notStarted++;
+    });
+    return summary;
+  }
+
   function formatDate(val) {
     if (!val) return "";
     const d = new Date(val);
@@ -239,11 +260,13 @@
       }
     }
 
-    const summary = computeSummary(tasks);
+    const summary = computeProjectSummary(projects);
 
     const setText = (id, v) => {
       const el = document.getElementById(id);
-      if (el) el.textContent = v;
+      if (!el) return;
+      const val = Number(v);
+      el.textContent = Number.isFinite(val) && val === 0 ? "—" : v;
     };
 
     setText("statTotalProjects", projects.length);
@@ -251,6 +274,30 @@
     setText("statInProgress", summary.inProgress);
     setText("statCompleted", summary.completed);
     setText("statNotStarted", summary.notStarted);
+  }
+
+  function renderClientHeader(clients = []) {
+    const sess = getSession();
+    if (!sess) return;
+    const nameEl = document.getElementById("headerClientName");
+    const statusEl = document.getElementById("headerClientStatus");
+    if (!nameEl && !statusEl) return;
+
+    let name = sess.username || "Client";
+    let status = "Active";
+
+    if (clients && clients.length) {
+      const match =
+        clients.find((c) => c.clientId === sess.clientId) ||
+        clients.find((c) => c.username === sess.username);
+      if (match) {
+        name = match.clientName || match.username || name;
+        status = match.status || status;
+      }
+    }
+
+    if (nameEl) nameEl.textContent = name;
+    if (statusEl) statusEl.textContent = status;
   }
 
   function initSidebarChrome() {
@@ -318,6 +365,7 @@
     sha256,
     computeSummary,
     computeProjectProgress,
+    computeProjectSummary,
     formatDate,
     formatDateTime,
     saveSession,
@@ -325,6 +373,7 @@
     clearSession,
     requireAuth,
     updateSidebarStats,
+    renderClientHeader,
     showPageLoader,
     hidePageLoader,
     setButtonLoading,

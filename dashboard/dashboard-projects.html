@@ -16,12 +16,16 @@
         <span>BX Media</span>
       </div>
 
-      <div class="sidebar-section-title">Navigation</div>
-      <nav class="nav">
+      <div class="sidebar-section-title">Main</div>
+      <nav class="nav nav-main">
         <a href="dashboard-overview.html" id="navOverview"><i class="fas fa-grid-2"></i> Overview</a>
         <a href="dashboard-clients.html" id="navClientsLink"><i class="fas fa-users"></i> Clients</a>
         <a href="dashboard-projects.html" id="navProjectsLink"><i class="fas fa-diagram-project"></i> Projects</a>
         <a href="dashboard-tasks.html" id="navTasksLink"><i class="fas fa-list-check"></i> Tasks</a>
+      </nav>
+
+      <div class="sidebar-section-title">Account</div>
+      <nav class="nav nav-account">
         <button id="logoutBtn"><i class="fas fa-arrow-right-from-bracket"></i> Log out</button>
       </nav>
       
@@ -37,80 +41,82 @@
     </aside>
 
     <main class="content">
-      <section class="panel">
-        <header class="panel-header">
-          <div>
-            <h1>Projects</h1>
-            
-          </div>
-        </header>
-        <div id="projectsActionStatus" class="alert alert-success" style="display:none"></div>
+      <div class="page-container">
+        <section class="panel">
+          <header class="panel-header">
+            <div>
+              <h1>Projects</h1>
+              <p class="panel-subtitle">Manage delivery status, progress, and client alignment.</p>
+            </div>
+          </header>
+          <div id="projectsActionStatus" class="alert alert-success" style="display:none"></div>
 
-        <section class="subpanel">
-          <h2><i class="fas fa-filter"></i> Filter</h2>
-          <div class="form-grid">
-            <div class="form-row" id="projectsClientRow">
-              <label>Client</label>
-              <select id="projectsClientSelect"></select>
+          <section class="subpanel section-block">
+            <h2><i class="fas fa-filter"></i> Filter</h2>
+            <div class="form-grid">
+              <div class="form-row" id="projectsClientRow">
+                <label>Client</label>
+                <select id="projectsClientSelect"></select>
+              </div>
+              <div class="form-row">
+                <label>Status</label>
+                <select id="projectsStatusFilter">
+                  <option value="all">All</option>
+                  <option value="not-started">Not started</option>
+                  <option value="in-progress">In progress</option>
+                  <option value="completed">Completed</option>
+                  <option value="blocked">Blocked</option>
+                </select>
+              </div>
             </div>
-            <div class="form-row">
-              <label>Status</label>
-              <select id="projectsStatusFilter">
-                <option value="all">All</option>
-                <option value="not-started">Not started</option>
-                <option value="in-progress">In progress</option>
-                <option value="completed">Completed</option>
-                <option value="blocked">Blocked</option>
-              </select>
-            </div>
-          </div>
-        </section>
+          </section>
 
-        <section class="subpanel">
-          <h2><i class="fas fa-diagram-project"></i> Add project</h2>
-          <form id="addProjectForm" class="form-grid">
-            <div class="form-row">
-              <label>Client</label>
-              <select id="addProjectClientSelect" name="clientId" required></select>
+          <section class="subpanel section-block">
+            <h2><i class="fas fa-diagram-project"></i> Add project</h2>
+            <form id="addProjectForm" class="form-grid">
+              <div class="form-row">
+                <label>Client</label>
+                <select id="addProjectClientSelect" name="clientId" required></select>
+              </div>
+              <div class="form-row">
+                <label>Project name</label>
+                <input name="name" required />
+              </div>
+              <div class="form-row">
+                <label>Description</label>
+                <textarea name="description" rows="2"></textarea>
+              </div>
+              <div class="form-row">
+                <label>Status</label>
+                <select name="status">
+                  <option value="not-started">Not started</option>
+                  <option value="in-progress" selected>In progress</option>
+                  <option value="completed">Completed</option>
+                  <option value="blocked">Blocked</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <label>Drive link</label>
+                <input name="driveLink" type="url" placeholder="https://drive.google.com/..." />
+              </div>
+              <button class="btn-primary" type="submit" data-default-label="Add project">
+                <span class="btn-label"><i class="fas fa-plus-circle"></i> <span class="btn-text">Add project</span></span>
+                <span class="btn-spinner" aria-hidden="true">
+                  <i class="fas fa-circle-notch fa-spin"></i>
+                </span>
+              </button>
+            </form>
+            <div id="addProjectStatus" class="alert alert-success" style="display:none">
+              Project added successfully.
             </div>
-            <div class="form-row">
-              <label>Project name</label>
-              <input name="name" required />
-            </div>
-            <div class="form-row">
-              <label>Description</label>
-              <textarea name="description" rows="2"></textarea>
-            </div>
-            <div class="form-row">
-              <label>Status</label>
-              <select name="status">
-                <option value="not-started">Not started</option>
-                <option value="in-progress" selected>In progress</option>
-                <option value="completed">Completed</option>
-                <option value="blocked">Blocked</option>
-              </select>
-            </div>
-            <div class="form-row">
-              <label>Drive link</label>
-              <input name="driveLink" type="url" placeholder="https://drive.google.com/..." />
-            </div>
-            <button class="btn-primary" type="submit" data-default-label="Add project">
-              <span class="btn-label"><i class="fas fa-plus-circle"></i> <span class="btn-text">Add project</span></span>
-              <span class="btn-spinner" aria-hidden="true">
-                <i class="fas fa-circle-notch fa-spin"></i>
-              </span>
-            </button>
-          </form>
-          <div id="addProjectStatus" class="alert alert-success" style="display:none">
-            Project added successfully.
-          </div>
-        </section>
+          </section>
 
-        <section class="subpanel">
-          <h2><i class="fas fa-layer-group"></i> Projects</h2>
-          <div id="projectsList"></div>
+          <section class="subpanel section-block">
+            <h2><i class="fas fa-layer-group"></i> Projects</h2>
+            <div id="projectsList"></div>
+          </section>
         </section>
-      </section>
+      </div>
     </main>
   </div>
 

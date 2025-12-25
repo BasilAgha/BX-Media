@@ -10,7 +10,8 @@
 
 <body>
 
-<div class="shell shell-multi">
+<div class="shell shell-multi client-shell">
+  <input type="checkbox" id="sidebarToggle" class="sidebar-toggle" />
 
   <!-- SIDEBAR -->
   <aside class="sidebar">
@@ -19,40 +20,63 @@
       <span>BX Media</span>
     </div>
 
-    <div class="sidebar-section-title">Navigation</div>
-    <nav class="nav">
-      <a href="client-dashboard-overview.html"><i class="fas fa-grid-2"></i> Overview</a>
-      <a href="client-dashboard-projects.html"><i class="fas fa-diagram-project"></i> Projects</a>
-      <a href="client-dashboard-tasks.html" class="active"><i class="fas fa-list-check"></i> Tasks</a>
+    <div class="sidebar-section-title">Main</div>
+    <nav class="nav nav-main">
+      <a href="client-dashboard-overview.html" id="navOverview"><i class="fas fa-grid-2"></i> Dashboard</a>
+      <a href="client-dashboard-projects.html" id="navProjectsLink"><i class="fas fa-diagram-project"></i> My Projects</a>
+      <a href="client-dashboard-tasks.html" id="navTasksLink"><i class="fas fa-list-check"></i> My Tasks</a>
+    </nav>
+
+    <div class="sidebar-section-title">Account</div>
+    <nav class="nav nav-account">
       <button id="logoutBtn"><i class="fas fa-arrow-right-from-bracket"></i> Log out</button>
     </nav>
 
     <div class="sidebar-section-title stats-title">Overview</div>
     <div class="sidebar-stats-grid">
-      <div class="stat-card"><span>Total projects</span><strong id="statTotalProjects">0</strong></div>
-      <div class="stat-card"><span>Total tasks</span><strong id="statTotalTasks">0</strong></div>
-      <div class="stat-card"><span>In progress</span><strong id="statInProgress">0</strong></div>
-      <div class="stat-card"><span>Completed</span><strong id="statCompleted">0</strong></div>
-      <div class="stat-card"><span>Not started</span><strong id="statNotStarted">0</strong></div>
+      <div class="stat-card"><span>Total projects</span><strong id="statTotalProjects">&mdash;</strong></div>
+      <div class="stat-card"><span>Total tasks</span><strong id="statTotalTasks">&mdash;</strong></div>
+      <div class="stat-card"><span>In progress</span><strong id="statInProgress">&mdash;</strong></div>
+      <div class="stat-card"><span>Completed</span><strong id="statCompleted">&mdash;</strong></div>
+      <div class="stat-card"><span>Not started</span><strong id="statNotStarted">&mdash;</strong></div>
     </div>
   </aside>
 
   <!-- MAIN CONTENT -->
   <main class="content">
+    <div class="page-container">
+      <section class="panel">
+        <header class="panel-header">
+          <div class="header-title-row">
+            <label for="sidebarToggle" class="sidebar-toggle-btn" aria-label="Open navigation">
+              <i class="fas fa-bars"></i>
+            </label>
+            <div>
+              <h1>My Tasks</h1>
+              <p class="panel-subtitle">Read-only updates managed by BX Media.</p>
+            </div>
+          </div>
+          <div class="header-meta">
+            <div class="client-meta">
+              <span class="client-name" id="headerClientName">Client</span>
+              <span class="status-badge" id="headerClientStatus">Active</span>
+            </div>
+          </div>
+        </header>
 
-    <section class="panel">
-      <header class="panel-header">
-        <h1>Your Tasks</h1>
-        <p>All tasks assigned to your projects</p>
-      </header>
+        <p class="managed-note">Tasks are managed by BX Media. This view is read-only.</p>
 
-      <!-- TASKS TABLE -->
-      <section class="subpanel">
-        <h2><i class="fas fa-table"></i> Tasks</h2>
-        <div id="tasksTableWrapper"></div>
+        <div id="projectViewHeader"></div>
+
+        <div id="projectTabs"></div>
+
+        <!-- TASKS TABLE -->
+        <section class="subpanel section-block">
+          <h2>Tasks</h2>
+          <div id="tasksTableWrapper"></div>
+        </section>
       </section>
-    </section>
-
+    </div>
   </main>
 
 </div>
@@ -65,6 +89,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!sess) return;
 
   const wrapper = document.getElementById("tasksTableWrapper");
+  const headerEl = document.getElementById("projectViewHeader");
+  const tabsEl = document.getElementById("projectTabs");
   BXCore.renderSkeleton(wrapper, "timeline", 4);
 
   // Load all data
@@ -72,10 +98,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   try {
     data = await BXCore.apiGetAll();
     BXCore.updateSidebarStats(data);
+    BXCore.renderClientHeader(data.clients || []);
   } catch (err) {
     console.error(err);
-    wrapper.innerHTML =
-      '<div class="empty">We could not load tasks. Please refresh and try again.</div>';
+    wrapper.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon"><i class="fas fa-circle-exclamation"></i></div>
+        <div>
+          <h3>We could not load tasks</h3>
+          <p>Something went wrong while loading your updates.</p>
+          <p class="empty-hint">Next step: refresh the page or try again later.</p>
+        </div>
+      </div>
+    `;
     return;
   }
 
@@ -98,54 +133,147 @@ document.addEventListener("DOMContentLoaded", async () => {
     ? projects.filter(p => p.projectId === selectedProjectId)
     : projects.slice();
 
-  if (!tasks.length) {
-    wrapper.innerHTML = '<div class="empty">No tasks available yet. Check back soon for updates.</div>';
+  if (!visibleProjects.length) {
+    wrapper.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon"><i class="fas fa-magnifying-glass"></i></div>
+        <div>
+          <h3>We could not find that project</h3>
+          <p>Return to My Projects to choose another project.</p>
+          <p class="empty-hint">Next step: open a different project to view tasks.</p>
+        </div>
+      </div>
+    `;
     return;
   }
 
-  if (!visibleProjects.length) {
-    wrapper.innerHTML = '<div class="empty">We could not find that project. Please return to Projects.</div>';
+  const selectedProject = selectedProjectId
+    ? visibleProjects.find((p) => p.projectId === selectedProjectId)
+    : null;
+
+  if (selectedProject) {
+    const projectTasks = tasks.filter((t) => t.projectId === selectedProject.projectId);
+    const progress = BXCore.computeProjectProgress(projectTasks);
+    const progressLabel = progress === 0 ? "—" : `${progress}%`;
+    const progressHelper = progress === 0 ? "No tasks yet" : "";
+    headerEl.innerHTML = `
+      <section class="subpanel">
+        <div class="project-view-head">
+          <div>
+            <h2>${selectedProject.name || "Project"}</h2>
+            <p class="project-meta-line">Managed by BX Media</p>
+          </div>
+          <span class="badge ${selectedProject.status || "in-progress"}">
+            ${(selectedProject.status || "in-progress").replace("-", " ")}
+          </span>
+        </div>
+        <div class="project-progress">
+          <span class="progress-value">${progressLabel}</span>
+          <progress max="100" value="${progress}"></progress>
+          ${progressHelper ? `<span class="progress-helper">${progressHelper}</span>` : ""}
+        </div>
+      </section>
+    `;
+
+    tabsEl.innerHTML = `
+      <div class="tabs">
+        <button class="tab is-disabled" type="button" title="Managed by BX Media">Overview</button>
+        <button class="tab is-active" type="button">Tasks</button>
+        <button class="tab is-disabled" type="button" title="Managed by BX Media">Files</button>
+        <button class="tab is-disabled" type="button" title="Managed by BX Media">Updates</button>
+      </div>
+    `;
+  } else {
+    headerEl.innerHTML = "";
+    tabsEl.innerHTML = "";
+  }
+
+  if (!tasks.length) {
+    wrapper.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon"><i class="fas fa-list-check"></i></div>
+        <div>
+          <h3>No tasks available yet</h3>
+          <p>Your BX Media team will add tasks as soon as production begins.</p>
+          <p class="empty-hint">Next step: check back after the next update.</p>
+        </div>
+      </div>
+    `;
     return;
   }
+
+  const tasksToRender = selectedProject
+    ? tasks.filter((t) => t.projectId === selectedProject.projectId)
+    : tasks.slice();
 
   wrapper.innerHTML = "";
   const list = document.createElement("div");
   list.className = "tasks-group-list";
 
-  visibleProjects.forEach(project => {
-    const projectTasks = tasks
-      .filter(t => t.projectId === project.projectId)
+  const statusGroups = [
+    {
+      key: "in-progress",
+      label: "In Progress",
+      icon: "fas fa-bolt",
+      emptyTitle: "No active tasks",
+      emptyHint: "Next step: we will notify you when work begins.",
+    },
+    {
+      key: "completed",
+      label: "Completed",
+      icon: "fas fa-check",
+      emptyTitle: "No completed tasks yet",
+      emptyHint: "Next step: completed work will appear after delivery.",
+    },
+  ];
+
+  statusGroups.forEach((group) => {
+    const groupTasks = tasksToRender
+      .filter((t) => {
+        const status = t.status || "not-started";
+        if (group.key === "in-progress") {
+          return status !== "completed";
+        }
+        return status === group.key;
+      })
       .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
 
     const section = document.createElement("section");
-    section.className = "tasks-group";
+    section.className = "client-task-group";
     section.innerHTML = `
-      <header class="tasks-group-header">
-        <div>
-          <h3>${project.name || "Project"}</h3>
-          <p class="project-meta-line">Updated: ${BXCore.formatDateTime(project.updatedAt || project.createdAt) || "Not updated yet"}</p>
-        </div>
-        <span class="badge ${project.status || "in-progress"}">Status: ${(project.status || "in-progress").replace("-", " ")}</span>
+      <header class="client-task-group-header">
+        <h3>${group.label}</h3>
+        <span class="badge ${group.key}">${groupTasks.length || "—"}</span>
       </header>
-      <div class="tasks-group-body"></div>
     `;
 
-    const body = section.querySelector(".tasks-group-body");
-    if (!projectTasks.length) {
-      body.innerHTML = '<div class="empty">No tasks for this project yet.</div>';
+    if (!groupTasks.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.innerHTML = `
+        <div class="empty-icon"><i class="${group.icon}"></i></div>
+        <div>
+          <h3>${group.emptyTitle}</h3>
+          <p>We'll surface updates here as soon as they are ready.</p>
+          <p class="empty-hint">${group.emptyHint}</p>
+        </div>
+      `;
+      section.appendChild(empty);
     } else {
-      projectTasks.forEach(task => {
+      groupTasks.forEach((task) => {
         const item = document.createElement("div");
-        item.className = "task-row";
+        item.className = "client-task-card";
         const dueLabel = BXCore.formatDate(task.dueDate) || "No due date";
         item.innerHTML = `
-          <div class="task-main">
+          <div>
             <strong>${task.title || "Task"}</strong>
-            <span class="task-status">Status: ${(task.status || "not-started").replace("-", " ")}</span>
+            <div class="client-task-meta">Due: ${dueLabel}</div>
           </div>
-          <div class="task-meta">Due: ${dueLabel}</div>
+          <span class="badge ${task.status || "not-started"}">
+            ${(task.status || "not-started").replace("-", " ")}
+          </span>
         `;
-        body.appendChild(item);
+        section.appendChild(item);
       });
     }
 

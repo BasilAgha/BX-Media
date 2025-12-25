@@ -16,12 +16,16 @@
         <span>BX Media</span>
       </div>
 
-      <div class="sidebar-section-title">Navigation</div>
-      <nav class="nav">
+      <div class="sidebar-section-title">Main</div>
+      <nav class="nav nav-main">
         <a href="dashboard-overview.html" id="navOverview"><i class="fas fa-grid-2"></i> Overview</a>
         <a href="dashboard-clients.html" id="navClientsLink"><i class="fas fa-users"></i> Clients</a>
         <a href="dashboard-projects.html" id="navProjectsLink"><i class="fas fa-diagram-project"></i> Projects</a>
         <a href="dashboard-tasks.html" id="navTasksLink"><i class="fas fa-list-check"></i> Tasks</a>
+      </nav>
+
+      <div class="sidebar-section-title">Account</div>
+      <nav class="nav nav-account">
         <button id="logoutBtn"><i class="fas fa-arrow-right-from-bracket"></i> Log out</button>
       </nav>
 
@@ -37,23 +41,29 @@
     </aside>
 
     <main class="content">
-      <section class="panel">
-        <header class="panel-header">
-          <div>
-            <h1 id="overviewTitle">Project overview</h1>
-            
+      <div class="page-container">
+        <section class="panel">
+          <header class="panel-header">
+            <div>
+              <h1 id="overviewTitle">Dashboard</h1>
+              <p class="panel-subtitle">High-level visibility across clients, projects, and delivery.</p>
+            </div>
+          </header>
+          <div id="overviewStatus" class="alert alert-error" role="alert" style="display:none"></div>
+
+          <section id="overviewSummary" class="summary-row"></section>
+
+          <div class="section-block">
+            <h2 class="section-title">Projects</h2>
+            <div id="overviewProjects" class="projects-grid"></div>
           </div>
-        </header>
-        <div id="overviewStatus" class="alert alert-error" role="alert" style="display:none"></div>
 
-        <section id="overviewSummary" class="summary-row"></section>
-
-        <h2 class="section-title">Projects</h2>
-        <div id="overviewProjects" class="projects-grid"></div>
-
-        <h2 class="section-title">Recent task updates</h2>
-        <div id="overviewTasks"></div>
-      </section>
+          <div class="section-block">
+            <h2 class="section-title">Recent task updates</h2>
+            <div id="overviewTasks"></div>
+          </div>
+        </section>
+      </div>
     </main>
   </div>
 
