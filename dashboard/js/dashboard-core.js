@@ -333,9 +333,11 @@
       "dashboard-clients.html": "navClientsLink",
       "dashboard-projects.html": "navProjectsLink",
       "dashboard-tasks.html": "navTasksLink",
+      "dashboard-deliverables.html": "navDeliverablesLink",
       "client-dashboard-overview.html": "navOverview",
       "client-dashboard-projects.html": "navProjectsLink",
       "client-dashboard-tasks.html": "navTasksLink",
+      "client-dashboard-deliverables.html": "navDeliverablesLink",
     };
     const activeId = map[path];
     if (activeId) {

@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>BX Media — Client Dashboard</title>
+  <title>BX Media - Client Deliverables</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
   <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 </head>
 
 <body>
@@ -42,7 +42,7 @@
     </div>
   </aside>
 
-  <!-- MAIN -->
+  <!-- MAIN CONTENT -->
   <main class="content">
     <div class="page-container">
       <section class="panel">
@@ -52,8 +52,8 @@
               <i class="fas fa-bars"></i>
             </label>
             <div>
-              <h1 id="overviewTitle">Dashboard</h1>
-              <p id="overviewSubtitle" class="panel-subtitle">Loading...</p>
+              <h1>Deliverables</h1>
+              <p class="panel-subtitle">Final assets delivered by BX Media. View-only.</p>
             </div>
           </div>
           <div class="header-meta">
@@ -64,29 +64,45 @@
           </div>
         </header>
 
-        <!-- SUMMARY -->
-        <section class="subpanel section-block">
-          <h2>Summary</h2>
-          <div id="overviewSummary" class="summary-row"></div>
-        </section>
+        <p class="managed-note">Deliverables are curated by BX Media. This view is read-only.</p>
 
-        <!-- CLIENT PROJECTS -->
         <section class="subpanel section-block">
-          <h2>Active Projects</h2>
-          <div id="overviewActiveProjects" class="project-grid"></div>
-        </section>
-
-        <!-- CLIENT TASKS -->
-        <section class="subpanel section-block">
-          <h2>Recent Activity</h2>
-          <div id="overviewActivity"></div>
+          <h2>Deliverables</h2>
+          <div id="deliverablesGrid" class="deliverables-grid"></div>
         </section>
       </section>
     </div>
   </main>
 </div>
 
+<div class="modal" id="deliverableModal" aria-hidden="true" role="dialog" aria-modal="true">
+  <div class="modal-backdrop" data-modal-close></div>
+  <div class="modal-panel">
+    <header class="modal-header">
+      <div>
+        <h2 id="deliverableModalTitle">Deliverable</h2>
+        <div class="modal-meta">
+          <span id="deliverableModalProject"></span>
+          <span id="deliverableModalClient"></span>
+        </div>
+      </div>
+      <button class="ghost modal-close" type="button" data-modal-close>
+        <i class="fas fa-xmark"></i> Close
+      </button>
+    </header>
+    <div class="modal-body">
+      <div class="modal-cover" id="deliverableModalCover"></div>
+      <div class="modal-status-row">
+        <span class="badge" id="deliverableModalStatus"></span>
+        <span class="modal-updated" id="deliverableModalUpdated"></span>
+      </div>
+      <p id="deliverableModalDescription" class="modal-description"></p>
+      <div class="modal-links" id="deliverableModalLinks"></div>
+    </div>
+  </div>
+</div>
+
 <script src="js/dashboard-core.js"></script>
-<script src="js/overview.js"></script>
+<script src="js/client-deliverables.js"></script>
 </body>
 </html>
