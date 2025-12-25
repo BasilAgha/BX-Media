@@ -10,6 +10,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const projectsList = document.getElementById("projectsList");
   const statusBox = document.getElementById("addProjectStatus");
   const actionStatusEl = document.getElementById("projectsActionStatus");
+  const toggleAddProjectBtn = document.getElementById("toggleAddProject");
+  const addProjectPanel = document.getElementById("addProjectPanel");
 
   const showActionStatus = (message, type = "success") => {
     if (!actionStatusEl) return;
@@ -89,9 +91,12 @@ document.addEventListener("DOMContentLoaded", async () => {
               Client: <strong>${client?.clientName || client?.username || "Unknown"}</strong>
             </p>
           </div>
-          <span class="badge ${p.status || "in-progress"}">
-            ${(p.status || "in-progress").replace("-", " ")}
-          </span>
+          <div class="project-card-actions">
+            <span class="badge ${p.status || "in-progress"}">
+              ${(p.status || "in-progress").replace("-", " ")}
+            </span>
+            <button class="btn-secondary btn-compact project-edit-toggle" type="button">Edit</button>
+          </div>
         </header>
         <div class="project-meta">
           <div style="flex:1">
@@ -107,7 +112,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         <div class="project-desc" style="font-size:0.8rem;margin-top:0.3rem;">
           ${pTasks.length} tasks
         </div>
-        <div class="project-edit">
+        <div class="project-edit" aria-hidden="true">
           <div class="project-edit-title">Edit project</div>
           <div class="project-edit-grid">
             <div class="form-row">
@@ -143,6 +148,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!projectActionsBound) {
       projectActionsBound = true;
       projectsList.addEventListener("click", async (e) => {
+        const toggleBtn = e.target.closest(".project-edit-toggle");
+        if (toggleBtn) {
+          const card = toggleBtn.closest(".project-card");
+          if (!card) return;
+          const isOpen = card.classList.toggle("is-editing");
+          toggleBtn.textContent = isOpen ? "Close" : "Edit";
+          const editPanel = card.querySelector(".project-edit");
+          if (editPanel) editPanel.setAttribute("aria-hidden", isOpen ? "false" : "true");
+          return;
+        }
+
         const saveBtn = e.target.closest(".admin-project-save");
         if (!saveBtn) return;
         const card = e.target.closest(".project-card");
@@ -188,6 +204,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   clientFilterSelect.addEventListener("change", renderProjects);
   statusFilter.addEventListener("change", renderProjects);
+
+  if (toggleAddProjectBtn && addProjectPanel) {
+    toggleAddProjectBtn.addEventListener("click", () => {
+      const isCollapsed = addProjectPanel.classList.toggle("is-collapsed");
+      toggleAddProjectBtn.textContent = isCollapsed ? "Show" : "Hide";
+      addProjectPanel.setAttribute("aria-hidden", isCollapsed ? "true" : "false");
+    });
+  }
 
   document.getElementById("addProjectForm").addEventListener("submit", async (e) => {
     e.preventDefault();

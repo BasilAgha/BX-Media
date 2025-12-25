@@ -72,8 +72,12 @@
           </section>
 
           <section class="subpanel section-block">
-            <h2><i class="fas fa-diagram-project"></i> Add project</h2>
-            <form id="addProjectForm" class="form-grid">
+            <div class="subpanel-header">
+              <h2><i class="fas fa-diagram-project"></i> Add project</h2>
+              <button class="btn-secondary btn-compact" id="toggleAddProject" type="button">Show</button>
+            </div>
+            <div id="addProjectPanel" class="collapsible is-collapsed" aria-hidden="true">
+              <form id="addProjectForm" class="form-grid">
               <div class="form-row">
                 <label>Client</label>
                 <select id="addProjectClientSelect" name="clientId" required></select>
@@ -105,9 +109,10 @@
                   <i class="fas fa-circle-notch fa-spin"></i>
                 </span>
               </button>
-            </form>
-            <div id="addProjectStatus" class="alert alert-success" style="display:none">
-              Project added successfully.
+              </form>
+              <div id="addProjectStatus" class="alert alert-success" style="display:none">
+                Project added successfully.
+              </div>
             </div>
           </section>
 
