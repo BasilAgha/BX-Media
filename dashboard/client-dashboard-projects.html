@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>BX Media — Client Projects</title>
+  <title>BX Media - Client Projects</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="css/dashboard.css" />
 </head>
@@ -19,9 +19,9 @@
 
     <div class="sidebar-section-title">Navigation</div>
     <nav class="nav">
-      <a href="client-dashboard-overview.html">Overview</a>
-      <a href="client-dashboard-projects.html" class="active">Projects</a>
-      <a href="client-dashboard-tasks.html">Tasks</a>
+      <a href="client-dashboard-overview.html" id="navOverview">Overview</a>
+      <a href="client-dashboard-projects.html" id="navProjectsLink">Projects</a>
+      <a href="client-dashboard-tasks.html" id="navTasksLink">Tasks</a>
       <button id="logoutBtn">Log out</button>
     </nav>
 
@@ -38,7 +38,7 @@
   <!-- MAIN -->
   <main class="content">
     <section class="panel">
-      
+
       <header class="panel-header">
         <div>
           <h1>Your Projects</h1>
@@ -57,19 +57,33 @@
 
 <script src="js/dashboard-core.js"></script>
 
-<!-- REUSE PROJECT JS BUT IN VIEW MODE ONLY -->
 <script>
 document.addEventListener("DOMContentLoaded", async () => {
-  
   const sess = BXCore.requireAuth();
   if (!sess) return;
 
-  const data = await BXCore.apiGetAll(true);
-  BXCore.updateSidebarStats(data);
-
   const projectsList = document.getElementById("projectsList");
-  const projects = data.projects.filter(p => p.clientId === sess.clientId);
-  const tasks = data.tasks;
+  BXCore.renderSkeleton(projectsList, "card", 3);
+
+  let data;
+  try {
+    data = await BXCore.apiGetAll();
+    BXCore.updateSidebarStats(data);
+  } catch (err) {
+    console.error(err);
+    projectsList.innerHTML =
+      '<div class="empty">We could not load projects. Please refresh and try again.</div>';
+    return;
+  }
+
+  let clientId = sess.clientId;
+  if (!clientId && sess.username) {
+    const match = (data.clients || []).find((c) => c.username === sess.username);
+    clientId = match ? match.clientId : null;
+  }
+
+  const projects = (data.projects || []).filter((p) => p.clientId === clientId);
+  const tasks = data.tasks || [];
 
   projectsList.innerHTML = "";
 
@@ -78,19 +92,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  projects.forEach(p => {
-    const taskList = tasks.filter(t => t.projectId === p.projectId);
+  projects.forEach((p) => {
+    const taskList = tasks.filter((t) => t.projectId === p.projectId);
     const progress = BXCore.computeProjectProgress(taskList);
+    const updatedLabel = BXCore.formatDateTime(p.updatedAt || p.createdAt) || "Not updated yet";
+    const statusValue = p.status || "in-progress";
 
     const card = document.createElement("article");
-    card.className = "project-card";
+    card.className = "project-card project-card-link";
+    card.dataset.href = `client-dashboard-tasks.html?projectId=${encodeURIComponent(p.projectId)}`;
     card.innerHTML = `
       <header>
         <div>
           <h3>${p.name}</h3>
           <p class="project-desc">${p.description || ""}</p>
+          <p class="project-meta-line">Updated: ${updatedLabel}</p>
         </div>
-        <span class="badge ${p.status}">${p.status.replace("-", " ")}</span>
+        <span class="badge ${statusValue}">Status: ${statusValue.replace("-", " ")}</span>
       </header>
 
       <div class="project-meta">
@@ -98,7 +116,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           <progress max="100" value="${progress}"></progress>
         </div>
         <span class="progress-label">${progress}%</span>
-        ${p.driveLink ? `<a class="ghost" href="${p.driveLink}" target="_blank">Drive</a>` : ""}
+        ${p.driveLink ? `<a class="ghost" href="${p.driveLink}" target="_blank" rel="noopener">Drive</a>` : ""}
       </div>
 
       <div class="project-desc" style="font-size:0.8rem;margin-top:0.3rem;">
@@ -108,6 +126,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     projectsList.appendChild(card);
   });
 
+  projectsList.addEventListener("click", (e) => {
+    const card = e.target.closest(".project-card-link");
+    if (!card) return;
+    if (e.target.closest("a")) return;
+    BXCore.showPageLoader("Loading project tasks...");
+    window.location.href = card.dataset.href;
+  });
 });
 </script>
 

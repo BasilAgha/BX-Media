@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>BX Media — Clients</title>
+  <title>BX Media - Clients</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="css/dashboard.css" />
@@ -44,39 +44,49 @@
             
           </div>
         </header>
+        <div id="clientsActionStatus" class="alert alert-success" style="display:none"></div>
 
-        <section class="subpanel">
-          <h2><i class="fas fa-user-plus"></i> Add client</h2>
-          <form id="addClientForm" class="form-grid">
-  <div class="form-row">
-    <label>Client name</label>
-    <input name="clientName" required />
-  </div>
+        <div class="layout-2col">
+          <div class="column">
+            <section class="subpanel">
+              <h2><i class="fas fa-user-plus"></i> Add client</h2>
+              <form id="addClientForm" class="form-grid">
+                <div class="form-row">
+                  <label>Client name</label>
+                  <input name="clientName" required />
+                </div>
 
-  <div class="form-row">
-    <label>Username (must match Accounts)</label>
-    <input name="username" required />
-  </div>
+                <div class="form-row">
+                  <label>Username (must match Accounts)</label>
+                  <input name="username" required />
+                </div>
 
-  <div class="form-row">
-    <label>Password</label>
-    <input name="password" type="password" required />
-  </div>
+                <div class="form-row">
+                  <label>Password</label>
+                  <input name="password" type="password" required />
+                </div>
 
-  <button class="btn-primary" type="submit">
-    <i class="fas fa-plus-circle"></i> Add client
-  </button>
-</form>
+                <button class="btn-primary" type="submit" data-default-label="Add client">
+                  <span class="btn-label"><i class="fas fa-plus-circle"></i> <span class="btn-text">Add client</span></span>
+                  <span class="btn-spinner" aria-hidden="true">
+                    <i class="fas fa-circle-notch fa-spin"></i>
+                  </span>
+                </button>
+              </form>
 
-          <div id="addClientStatus" class="alert alert-success" style="display:none">
-            Client added successfully.
+              <div id="addClientStatus" class="alert alert-success" style="display:none">
+                Client added successfully.
+              </div>
+            </section>
           </div>
-        </section>
 
-        <section class="subpanel">
-          <h2><i class="fas fa-users"></i> Clients</h2>
-          <div id="clientsTableWrapper"></div>
-        </section>
+          <div class="column">
+            <section class="subpanel">
+              <h2><i class="fas fa-users"></i> Clients</h2>
+              <div id="clientsTableWrapper"></div>
+            </section>
+          </div>
+        </div>
       </section>
     </main>
   </div>

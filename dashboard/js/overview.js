@@ -1,16 +1,64 @@
-
 document.addEventListener("DOMContentLoaded", async () => {
   const sess = BXCore.requireAuth();
   if (!sess) return;
 
   const titleEl = document.getElementById("overviewTitle");
   const subtitleEl = document.getElementById("overviewSubtitle");
+  const statusEl = document.getElementById("overviewStatus");
   const summaryEl = document.getElementById("overviewSummary");
   const projectsEl = document.getElementById("overviewProjects");
   const tasksEl = document.getElementById("overviewTasks");
 
+  const renderTimeline = (items, projects, clients) => {
+    tasksEl.innerHTML = "";
+    if (!items.length) {
+      tasksEl.innerHTML = '<div class="empty">No updates yet. Check back later for activity.</div>';
+      return;
+    }
+
+    const timeline = document.createElement("div");
+    timeline.className = "timeline";
+
+    items
+      .slice()
+      .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))
+      .slice(0, 12)
+      .forEach((t) => {
+        const proj = projects.find((p) => p.projectId === t.projectId);
+        const client = proj ? clients.find((c) => c.clientId === proj.clientId) : null;
+        const statusLabel = (t.status || "not-started").replace("-", " ");
+        const type =
+          t.status === "completed" ? "delivery" : t.status === "in-progress" ? "team" : "system";
+        const tagLabel =
+          type === "delivery" ? "File delivery" : type === "team" ? "Team update" : "System update";
+        const marker = type === "delivery" ? "D" : type === "team" ? "T" : "S";
+
+        const item = document.createElement("div");
+        item.className = "timeline-item";
+        item.innerHTML = `
+          <div class="timeline-marker">${marker}</div>
+          <div class="timeline-content">
+            <h4>${t.title || "Task update"}</h4>
+            <p>${proj?.name || "Project"} - Status: ${statusLabel}</p>
+            <div class="timeline-meta">
+              <span>${BXCore.formatDateTime(t.updatedAt) || "No recent update"}</span>
+              ${client ? `<span>Client: ${client.clientName || client.username}</span>` : ""}
+              <span class="timeline-tag ${type}">${tagLabel}</span>
+            </div>
+          </div>
+        `;
+        timeline.appendChild(item);
+      });
+
+    tasksEl.appendChild(timeline);
+  };
+
   try {
-    const data = await BXCore.apiGetAll(true);
+    BXCore.renderSkeleton(summaryEl, "summary", 5);
+    BXCore.renderSkeleton(projectsEl, "card", 3);
+    BXCore.renderSkeleton(tasksEl, "timeline", 4);
+
+    const data = await BXCore.apiGetAll();
     BXCore.updateSidebarStats(data);
 
     const clients = data.clients || [];
@@ -40,12 +88,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       projectsEl.innerHTML = "";
       if (!projects.length) {
-        projectsEl.innerHTML = `<div class="empty">No projects yet.</div>`;
+        projectsEl.innerHTML = '<div class="empty">No projects yet.</div>';
       } else {
         projects.forEach((p) => {
           const pTasks = tasks.filter((t) => t.projectId === p.projectId);
           const progress = BXCore.computeProjectProgress(pTasks);
           const client = clients.find((c) => c.clientId === p.clientId);
+          const updatedLabel = BXCore.formatDateTime(p.updatedAt || p.createdAt) || "Not updated yet";
 
           const card = document.createElement("article");
           card.className = "project-card";
@@ -55,11 +104,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                 <h3>${p.name || "Untitled project"}</h3>
                 <p class="project-desc">${p.description || ""}</p>
                 <p class="project-desc" style="font-size:0.8rem;margin-top:0.2rem;">
-                  Client: <strong>${client?.clientName || client?.username || "—"}</strong>
+                  Client: <strong>${client?.clientName || client?.username || "Unknown"}</strong>
                 </p>
+                <p class="project-meta-line">Updated: ${updatedLabel}</p>
               </div>
               <span class="badge ${p.status || "in-progress"}">
-                ${(p.status || "in-progress").replace("-", " ")}
+                Status: ${(p.status || "in-progress").replace("-", " ")}
               </span>
             </header>
             <div class="project-meta">
@@ -78,52 +128,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
       }
 
-      tasksEl.innerHTML = "";
-      if (!tasks.length) {
-        tasksEl.innerHTML = `<div class="empty">No tasks yet.</div>`;
-      } else {
-        const wrap = document.createElement("div");
-        wrap.className = "table-wrapper";
-        const table = document.createElement("table");
-        table.innerHTML = `
-          <thead>
-            <tr>
-              <th>Task</th>
-              <th>Project</th>
-              <th>Status</th>
-              <th>Progress</th>
-              <th>Client</th>
-              <th>Due</th>
-              <th>Updated</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        `;
-        const tbody = table.querySelector("tbody");
-        tasks
-          .slice()
-          .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))
-          .slice(0, 15)
-          .forEach((t) => {
-            const proj = projects.find((p) => p.projectId === t.projectId);
-            const cl = proj ? clients.find((c) => c.clientId === proj.clientId) : null;
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td>${t.title || ""}</td>
-              <td>${proj?.name || "—"}</td>
-              <td><span class="badge ${t.status || "not-started"}">${
-              (t.status || "not-started").replace("-", " ")
-            }</span></td>
-              <td>${t.progress || 0}%</td>
-              <td>${cl?.clientName || cl?.username || "—"}</td>
-              <td>${BXCore.formatDate(t.dueDate)}</td>
-              <td>${BXCore.formatDateTime(t.updatedAt)}</td>
-            `;
-            tbody.appendChild(tr);
-          });
-        wrap.appendChild(table);
-        tasksEl.appendChild(wrap);
-      }
+      renderTimeline(tasks, projects, clients);
     } else {
       const client =
         clients.find((c) => c.clientId === sess.clientId) ||
@@ -134,7 +139,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           ? `Welcome back, ${client.clientName || sess.username}`
           : `Welcome back, ${sess.username}`;
       if (subtitleEl)
-        subtitleEl.textContent = "Here’s the latest on your active BX Media projects.";
+        subtitleEl.textContent = "Here's the latest on your active BX Media projects.";
 
       const clientProjects = projects.filter((p) => p.clientId === client?.clientId);
       const clientTasks = tasks.filter((t) =>
@@ -159,11 +164,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       projectsEl.innerHTML = "";
       if (!clientProjects.length) {
-        projectsEl.innerHTML = `<div class="empty">No projects yet.</div>`;
+        projectsEl.innerHTML = '<div class="empty">No projects yet.</div>';
       } else {
         clientProjects.forEach((p) => {
           const pTasks = clientTasks.filter((t) => t.projectId === p.projectId);
           const progress = BXCore.computeProjectProgress(pTasks);
+          const updatedLabel = BXCore.formatDateTime(p.updatedAt || p.createdAt) || "Not updated yet";
+
           const card = document.createElement("article");
           card.className = "project-card";
           card.innerHTML = `
@@ -171,9 +178,10 @@ document.addEventListener("DOMContentLoaded", async () => {
               <div>
                 <h3>${p.name || "Untitled project"}</h3>
                 <p class="project-desc">${p.description || ""}</p>
+                <p class="project-meta-line">Updated: ${updatedLabel}</p>
               </div>
               <span class="badge ${p.status || "in-progress"}">
-                ${(p.status || "in-progress").replace("-", " ")}
+                Status: ${(p.status || "in-progress").replace("-", " ")}
               </span>
             </header>
             <div class="project-meta">
@@ -192,51 +200,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
       }
 
-      tasksEl.innerHTML = "";
-      if (!clientTasks.length) {
-        tasksEl.innerHTML = `<div class="empty">No tasks yet.</div>`;
-      } else {
-        const wrap = document.createElement("div");
-        wrap.className = "table-wrapper";
-        const table = document.createElement("table");
-        table.innerHTML = `
-          <thead>
-            <tr>
-              <th>Task</th>
-              <th>Description</th>
-              <th>Status</th>
-              <th>Progress</th>
-              <th>Due</th>
-              <th>Updated</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        `;
-        const tbody = table.querySelector("tbody");
-        clientTasks
-          .slice()
-          .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))
-          .forEach((t) => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td>${t.title || ""}</td>
-              <td>${t.description || ""}</td>
-              <td><span class="badge ${t.status || "not-started"}">${
-              (t.status || "not-started").replace("-", " ")
-            }</span></td>
-              <td>${t.progress || 0}%</td>
-              <td>${BXCore.formatDate(t.dueDate)}</td>
-              <td>${BXCore.formatDateTime(t.updatedAt)}</td>
-            `;
-            tbody.appendChild(tr);
-          });
-        wrap.appendChild(table);
-        tasksEl.appendChild(wrap);
-      }
+      renderTimeline(clientTasks, projects, clients);
     }
   } catch (err) {
     console.error(err);
-    if (subtitleEl)
+    if (subtitleEl) {
       subtitleEl.textContent = "Failed to load data. Please refresh and try again.";
+    }
+    if (statusEl) {
+      statusEl.textContent = "Failed to load data. Please refresh and try again.";
+      statusEl.style.display = "block";
+    }
   }
 });

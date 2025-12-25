@@ -4,23 +4,43 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!sess) return;
 
   const statusEl = document.getElementById("addClientStatus");
+  const actionStatusEl = document.getElementById("clientsActionStatus");
+
+  const showActionStatus = (message, type = "success") => {
+    if (!actionStatusEl) return;
+    actionStatusEl.classList.remove("alert-success", "alert-error", "alert-info");
+    actionStatusEl.classList.add(`alert-${type}`);
+    actionStatusEl.textContent = message;
+    actionStatusEl.style.display = "block";
+  };
 
   /* ---------------------------------------------------------
      RENDER CLIENTS TABLE
   --------------------------------------------------------- */
   async function renderClients() {
-    const data = await BXCore.apiGetAll(true);
-    BXCore.updateSidebarStats(data);
+    const wrapper = document.getElementById("clientsTableWrapper");
+    BXCore.renderSkeleton(wrapper, "table", 1);
+
+    let data;
+    try {
+      data = await BXCore.apiGetAll();
+      BXCore.updateSidebarStats(data);
+    } catch (err) {
+      console.error(err);
+      wrapper.innerHTML =
+        '<div class="empty">We could not load clients. Please refresh and try again.</div>';
+      showActionStatus("We could not load clients. Please refresh and try again.", "error");
+      return;
+    }
 
     const clients = data.clients || [];
     const projects = data.projects || [];
     const tasks = data.tasks || [];
 
-    const wrapper = document.getElementById("clientsTableWrapper");
     wrapper.innerHTML = "";
 
     if (!clients.length) {
-      wrapper.innerHTML = `<div class="empty">No clients found.</div>`;
+      wrapper.innerHTML = '<div class="empty">No clients found.</div>';
       return;
     }
 
@@ -51,13 +71,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td><strong>${c.clientName || "—"}</strong></td>
-        <td>${c.username || "—"}</td>
+        <td><strong>${c.clientName || "Unknown"}</strong></td>
+        <td>${c.username || "Unknown"}</td>
         <td>${clientProjects.length}</td>
         <td>${clientTasks.length}</td>
         <td>
           <button class="btn-danger" data-delete="${c.clientId}" style="font-size:0.8rem;padding:0.2rem 0.7rem;">
-            <i class="fas fa-trash"></i> Delete
+            <i class="fas fa-trash"></i> <span class="btn-text">Delete</span>
           </button>
         </td>
       `;
@@ -72,6 +92,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const clientId = btn.getAttribute("data-delete");
       if (!confirm("Delete this client and all their projects/tasks?")) return;
 
+      BXCore.setButtonLoading(btn, true, "Deleting...");
       try {
         const resp = await BXCore.apiPost({ action: "deleteClient", clientId });
         if (resp && resp.error) throw new Error(resp.error);
@@ -81,9 +102,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         BXCore.updateSidebarStats(fresh);
 
         await renderClients();
+        showActionStatus("Client removed. The list is up to date.", "success");
       } catch (err) {
         console.error(err);
-        alert("Failed to delete client.");
+        showActionStatus("Couldn't delete the client. Please try again.", "error");
+      } finally {
+        BXCore.setButtonLoading(btn, false);
       }
     });
 
@@ -97,6 +121,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("addClientForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     if (statusEl) statusEl.style.display = "none";
+    const submitBtn = e.target.querySelector("button[type=\"submit\"]");
 
     const fd = new FormData(e.target);
 
@@ -105,9 +130,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     const password = String(fd.get("password") || "").trim();
 
     if (!clientName || !username || !password) {
-      alert("Please fill in all fields.");
+      showActionStatus("Please complete all fields to add a client.", "error");
       return;
     }
+    BXCore.setButtonLoading(submitBtn, true, "Saving...");
 
     const clientId = "client_" + Date.now();
 
@@ -129,8 +155,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         statusEl.style.display = "block";
         setTimeout(() => (statusEl.style.display = "none"), 2000);
       }
+      showActionStatus("Client added. You can assign projects now.", "success");
 
-      // 🔥 Refresh sidebar counters
+      // Refresh sidebar counters
       const fresh = await BXCore.apiGetAll(true);
       BXCore.updateSidebarStats(fresh);
 
@@ -138,7 +165,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       await renderClients();
     } catch (err) {
       console.error(err);
-      alert("Failed to add client.");
+      showActionStatus("Couldn't add the client. Please try again.", "error");
+    } finally {
+      BXCore.setButtonLoading(submitBtn, false);
     }
   });
 

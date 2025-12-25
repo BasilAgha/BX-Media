@@ -1,4 +1,3 @@
-
 // BX Media Dashboard Core Logic
 // Shared helpers: API, auth, utilities, sidebar wiring
 
@@ -6,6 +5,83 @@
   const API_BASE = "https://script.google.com/macros/s/AKfycbzNjg0iGqHY0vIIgjIId9eJElTC-wK42FKQYS7DBVAzJvQ-4YkRh_o1RPFtJhLpfi0OMg/exec";
   const SESSION_KEY = "bxm_dashboard_session_v1";
   let cachedData = null;
+  let firstLoadPending = true;
+
+  function ensurePageLoader() {
+    if (document.getElementById("pageLoader")) return;
+    const mount = () => {
+      if (document.getElementById("pageLoader")) return;
+      const loader = document.createElement("div");
+      loader.id = "pageLoader";
+      loader.className = "page-loader";
+      loader.innerHTML = `
+        <div class="spinner" aria-hidden="true"></div>
+        <div class="message" role="status" aria-live="polite">Loading...</div>
+      `;
+      document.body.appendChild(loader);
+    };
+    if (document.body) {
+      mount();
+    } else {
+      document.addEventListener("DOMContentLoaded", mount);
+    }
+  }
+
+  function showPageLoader(message) {
+    ensurePageLoader();
+    const loader = document.getElementById("pageLoader");
+    if (!loader) return;
+    const msg = loader.querySelector(".message");
+    if (msg) msg.textContent = message || "Loading...";
+    loader.classList.add("is-visible");
+  }
+
+  function hidePageLoader() {
+    const loader = document.getElementById("pageLoader");
+    if (!loader) return;
+    loader.classList.remove("is-visible");
+  }
+
+  function setButtonLoading(btn, isLoading, loadingText) {
+    if (!btn) return;
+    const labelEl = btn.querySelector(".btn-text");
+    if (!btn.dataset.defaultLabel) {
+      if (labelEl) {
+        btn.dataset.defaultLabel = labelEl.textContent.trim();
+      } else {
+        btn.dataset.defaultLabel = btn.textContent.trim();
+      }
+    }
+    if (isLoading) {
+      const nextLabel = loadingText || "Loading...";
+      if (labelEl) {
+        labelEl.textContent = nextLabel;
+      } else {
+        btn.textContent = nextLabel;
+      }
+    } else {
+      const restore = btn.dataset.defaultLabel || "Submit";
+      if (labelEl) {
+        labelEl.textContent = restore;
+      } else {
+        btn.textContent = restore;
+      }
+    }
+    btn.disabled = !!isLoading;
+    btn.classList.toggle("is-loading", !!isLoading);
+    btn.setAttribute("aria-busy", isLoading ? "true" : "false");
+  }
+
+  function renderSkeleton(container, type, count = 3) {
+    if (!container) return;
+    container.innerHTML = "";
+    const classes = ["skeleton", `skeleton-${type}`];
+    for (let i = 0; i < count; i += 1) {
+      const item = document.createElement("div");
+      item.className = classes.join(" ");
+      container.appendChild(item);
+    }
+  }
 
   function unwrapBody(obj) {
     if (obj && typeof obj === "object" && "body" in obj && obj.body) return obj.body;
@@ -14,30 +90,36 @@
 
   async function apiGetAll(force = false) {
     if (!force && cachedData) return cachedData;
-    const res = await fetch(API_BASE + "?action=getAll");
-    if (!res.ok) throw new Error("Failed to fetch data");
-    const json = await res.json();
-    cachedData = unwrapBody(json);
-    return cachedData;
+    if (firstLoadPending) showPageLoader("Loading dashboard...");
+    try {
+      const res = await fetch(API_BASE + "?action=getAll");
+      if (!res.ok) throw new Error("Failed to fetch data");
+      const json = await res.json();
+      cachedData = unwrapBody(json);
+      return cachedData;
+    } finally {
+      if (firstLoadPending) {
+        firstLoadPending = false;
+        hidePageLoader();
+      }
+    }
   }
 
   async function apiPost(payload) {
-  const res = await fetch(API_BASE, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+    const res = await fetch(API_BASE, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
 
-  if (!res.ok) throw new Error("Request failed");
+    if (!res.ok) throw new Error("Request failed");
 
-  const json = await res.json();
+    const json = await res.json();
 
-  // 🔥 Important: force cache refresh
-  cachedData = null;
+    // Important: force cache refresh
+    cachedData = null;
 
-  return unwrapBody(json);
-}
-
-
+    return unwrapBody(json);
+  }
 
   async function sha256(text) {
     if (!window.crypto?.subtle) return text;
@@ -74,7 +156,7 @@
   }
 
   function formatDate(val) {
-    if (!val) return "—";
+    if (!val) return "";
     const d = new Date(val);
     if (Number.isNaN(d.getTime())) return String(val);
     return d.toLocaleDateString(undefined, {
@@ -85,7 +167,7 @@
   }
 
   function formatDateTime(val) {
-    if (!val) return "—";
+    if (!val) return "";
     const d = new Date(val);
     if (Number.isNaN(d.getTime())) return String(val);
     return d.toLocaleString(undefined, {
@@ -117,6 +199,7 @@
   function requireAuth(options = {}, redirectIfMissing = true) {
     const sess = getSession();
     if (!sess && redirectIfMissing) {
+      showPageLoader("Redirecting to sign in...");
       window.location.href = "login.html";
       return null;
     }
@@ -124,6 +207,7 @@
 
     if (options.role && sess.role !== options.role) {
       // If wrong role, send to overview
+      showPageLoader("Redirecting...");
       window.location.href = "dashboard-overview.html";
       return null;
     }
@@ -132,8 +216,29 @@
 
   function updateSidebarStats(data) {
     if (!data) return;
-    const projects = data.projects || [];
-    const tasks = data.tasks || [];
+    const sess = getSession();
+
+    let projects = data.projects || [];
+    let tasks = data.tasks || [];
+
+    if (sess && sess.role === "client") {
+      const clients = data.clients || [];
+      let clientId = sess.clientId;
+      if (!clientId && sess.username) {
+        const match = clients.find((c) => c.username === sess.username);
+        clientId = match ? match.clientId : null;
+      }
+
+      if (clientId) {
+        projects = projects.filter((p) => p.clientId === clientId);
+        const projectIds = new Set(projects.map((p) => p.projectId));
+        tasks = tasks.filter((t) => projectIds.has(t.projectId));
+      } else {
+        projects = [];
+        tasks = [];
+      }
+    }
+
     const summary = computeSummary(tasks);
 
     const setText = (id, v) => {
@@ -154,6 +259,7 @@
     const logoutBtn = document.getElementById("logoutBtn");
     if (logoutBtn) {
       logoutBtn.addEventListener("click", () => {
+        showPageLoader("Signing out...");
         clearSession();
         window.location.href = "login.html";
       });
@@ -170,20 +276,41 @@
 
     // Active link
     const path = (window.location.pathname.split("/").pop() || "").toLowerCase();
+    if (path.startsWith("client-") && sess && sess.role !== "client") {
+      showPageLoader("Redirecting...");
+      window.location.href = "dashboard-overview.html";
+      return;
+    }
     const map = {
       "dashboard-overview.html": "navOverview",
       "dashboard-clients.html": "navClientsLink",
       "dashboard-projects.html": "navProjectsLink",
       "dashboard-tasks.html": "navTasksLink",
+      "client-dashboard-overview.html": "navOverview",
+      "client-dashboard-projects.html": "navProjectsLink",
+      "client-dashboard-tasks.html": "navTasksLink",
     };
     const activeId = map[path];
     if (activeId) {
       const el = document.getElementById(activeId);
       if (el) el.classList.add("active");
     }
+
+    const nav = document.querySelector(".nav");
+    if (nav) {
+      nav.addEventListener("click", (e) => {
+        const link = e.target.closest("a");
+        if (!link) return;
+        if (link.target === "_blank") return;
+        showPageLoader("Loading...");
+      });
+    }
   }
 
-  document.addEventListener("DOMContentLoaded", initSidebarChrome);
+  document.addEventListener("DOMContentLoaded", () => {
+    ensurePageLoader();
+    initSidebarChrome();
+  });
 
   window.BXCore = {
     apiGetAll,
@@ -198,6 +325,10 @@
     clearSession,
     requireAuth,
     updateSidebarStats,
+    showPageLoader,
+    hidePageLoader,
+    setButtonLoading,
+    renderSkeleton,
     API_BASE,
   };
 })();

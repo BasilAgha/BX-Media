@@ -13,7 +13,8 @@
       <h1><i class="fas fa-lock"></i> BX Media Dashboard</h1>
       
 
-      <div id="loginError" class="alert alert-error" style="display:none">Invalid username or password.</div>
+      <div id="loginStatus" class="alert alert-info" role="status" aria-live="polite" style="display:none"></div>
+      <div id="loginError" class="alert alert-error" role="alert" aria-live="assertive" style="display:none">Invalid username or password.</div>
 
       <form id="loginForm" class="form-grid">
         <div class="form-row">
@@ -24,8 +25,11 @@
           <label for="password"><i class="fas fa-key"></i> Password</label>
           <input id="password" name="password" type="password" required autocomplete="current-password" />
         </div>
-        <button type="submit" class="btn-primary">
-          <i class="fas fa-sign-in-alt"></i> Sign in
+        <button type="submit" class="btn-primary" data-default-label="Sign in">
+          <span class="btn-label"><i class="fas fa-sign-in-alt"></i> <span class="btn-text">Sign in</span></span>
+          <span class="btn-spinner" aria-hidden="true">
+            <i class="fas fa-circle-notch fa-spin"></i>
+          </span>
         </button>
       </form>
     </section>

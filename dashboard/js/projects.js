@@ -9,9 +9,29 @@ document.addEventListener("DOMContentLoaded", async () => {
   const addProjectClientSelect = document.getElementById("addProjectClientSelect");
   const projectsList = document.getElementById("projectsList");
   const statusBox = document.getElementById("addProjectStatus");
+  const actionStatusEl = document.getElementById("projectsActionStatus");
 
-  let data = await BXCore.apiGetAll(true);
-  BXCore.updateSidebarStats(data);
+  const showActionStatus = (message, type = "success") => {
+    if (!actionStatusEl) return;
+    actionStatusEl.classList.remove("alert-success", "alert-error", "alert-info");
+    actionStatusEl.classList.add(`alert-${type}`);
+    actionStatusEl.textContent = message;
+    actionStatusEl.style.display = "block";
+  };
+
+  BXCore.renderSkeleton(projectsList, "card", 3);
+
+  let data;
+  try {
+    data = await BXCore.apiGetAll();
+    BXCore.updateSidebarStats(data);
+  } catch (err) {
+    console.error(err);
+    projectsList.innerHTML =
+      '<div class="empty">We could not load projects. Please refresh and try again.</div>';
+    showActionStatus("We could not load projects. Please refresh and try again.", "error");
+    return;
+  }
 
   let clients = data.clients || [];
   let projects = data.projects || [];
@@ -64,7 +84,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             <h3>${p.name || "Untitled project"}</h3>
             <p class="project-desc">${p.description || ""}</p>
             <p class="project-desc" style="font-size:0.8rem;margin-top:0.2rem;">
-              Client: <strong>${client?.clientName || client?.username || "—"}</strong>
+              Client: <strong>${client?.clientName || client?.username || "Unknown"}</strong>
             </p>
           </div>
           <span class="badge ${p.status || "in-progress"}">
@@ -96,13 +116,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("addProjectForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     if (statusBox) statusBox.style.display = "none";
+    const submitBtn = e.target.querySelector("button[type=\"submit\"]");
 
     const fd = new FormData(e.target);
     const clientId = fd.get("clientId");
     if (!clientId) {
-      alert("Select a client.");
+      showActionStatus("Please select a client before saving the project.", "error");
       return;
     }
+    BXCore.setButtonLoading(submitBtn, true, "Saving...");
 
     const projectId = "project_" + Date.now();
 
@@ -124,6 +146,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         statusBox.style.display = "block";
         setTimeout(() => (statusBox.style.display = "none"), 2000);
       }
+      showActionStatus("Project saved. The list is refreshed.", "success");
 
       data = await BXCore.apiGetAll(true);
       BXCore.updateSidebarStats(data);
@@ -135,7 +158,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       renderProjects();
     } catch (err) {
       console.error(err);
-      alert("Failed to add project.");
+      showActionStatus("Couldn't save the project. Please try again.", "error");
+    } finally {
+      BXCore.setButtonLoading(submitBtn, false);
     }
   });
 

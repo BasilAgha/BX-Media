@@ -44,6 +44,7 @@
             
           </div>
         </header>
+        <div id="tasksActionStatus" class="alert alert-success" style="display:none"></div>
 
         <section class="subpanel">
           <h2><i class="fas fa-filter"></i> Filters</h2>
@@ -101,8 +102,11 @@
               <label>Due date</label>
               <input name="dueDate" type="date" />
             </div>
-            <button class="btn-primary" type="submit">
-              <i class="fas fa-plus-circle"></i> Add task
+            <button class="btn-primary" type="submit" data-default-label="Add task">
+              <span class="btn-label"><i class="fas fa-plus-circle"></i> <span class="btn-text">Add task</span></span>
+              <span class="btn-spinner" aria-hidden="true">
+                <i class="fas fa-circle-notch fa-spin"></i>
+              </span>
             </button>
           </form>
           <div id="addTaskStatus" class="alert alert-success" style="display:none">

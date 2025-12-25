@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>BX Media — Client Tasks</title>
+  <title>BX Media - Client Tasks</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="css/dashboard.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
@@ -65,61 +65,94 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!sess) return;
 
   const wrapper = document.getElementById("tasksTableWrapper");
+  BXCore.renderSkeleton(wrapper, "timeline", 4);
 
   // Load all data
-  const data = await BXCore.apiGetAll(true);
-  BXCore.updateSidebarStats(data);
+  let data;
+  try {
+    data = await BXCore.apiGetAll();
+    BXCore.updateSidebarStats(data);
+  } catch (err) {
+    console.error(err);
+    wrapper.innerHTML =
+      '<div class="empty">We could not load tasks. Please refresh and try again.</div>';
+    return;
+  }
 
   // Filter only client projects
-  const projects = data.projects.filter(p => p.clientId === sess.clientId);
+  let clientId = sess.clientId;
+  if (!clientId && sess.username) {
+    const match = (data.clients || []).find((c) => c.username === sess.username);
+    clientId = match ? match.clientId : null;
+  }
+
+  const projects = (data.projects || []).filter(p => p.clientId === clientId);
   const projectIds = projects.map(p => p.projectId);
 
   // Filter tasks belonging ONLY to client's projects
   const tasks = data.tasks.filter(t => projectIds.includes(t.projectId));
 
+  const params = new URLSearchParams(window.location.search);
+  const selectedProjectId = params.get("projectId");
+  const visibleProjects = selectedProjectId
+    ? projects.filter(p => p.projectId === selectedProjectId)
+    : projects.slice();
+
   if (!tasks.length) {
-    wrapper.innerHTML = '<div class="empty">No tasks available yet.</div>';
+    wrapper.innerHTML = '<div class="empty">No tasks available yet. Check back soon for updates.</div>';
     return;
   }
 
-  const wrap = document.createElement("div");
-  wrap.className = "table-wrapper";
+  if (!visibleProjects.length) {
+    wrapper.innerHTML = '<div class="empty">We could not find that project. Please return to Projects.</div>';
+    return;
+  }
 
-  const table = document.createElement("table");
-  table.innerHTML = `
-    <thead>
-      <tr>
-        <th>Task</th>
-        <th>Description</th>
-        <th>Status</th>
-        <th>Progress</th>
-        <th>Due</th>
-        <th>Updated</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  `;
+  wrapper.innerHTML = "";
+  const list = document.createElement("div");
+  list.className = "tasks-group-list";
 
-  const tbody = table.querySelector("tbody");
+  visibleProjects.forEach(project => {
+    const projectTasks = tasks
+      .filter(t => t.projectId === project.projectId)
+      .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
 
-  tasks
-    .slice()
-    .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))
-    .forEach(t => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${t.title || ""}</td>
-        <td>${t.description || ""}</td>
-        <td><span class="badge ${t.status}">${t.status.replace("-", " ")}</span></td>
-        <td>${t.progress || 0}%</td>
-        <td>${BXCore.formatDate(t.dueDate)}</td>
-        <td>${BXCore.formatDateTime(t.updatedAt)}</td>
-      `;
-      tbody.appendChild(tr);
-    });
+    const section = document.createElement("section");
+    section.className = "tasks-group";
+    section.innerHTML = `
+      <header class="tasks-group-header">
+        <div>
+          <h3>${project.name || "Project"}</h3>
+          <p class="project-meta-line">Updated: ${BXCore.formatDateTime(project.updatedAt || project.createdAt) || "Not updated yet"}</p>
+        </div>
+        <span class="badge ${project.status || "in-progress"}">Status: ${(project.status || "in-progress").replace("-", " ")}</span>
+      </header>
+      <div class="tasks-group-body"></div>
+    `;
 
-  wrap.appendChild(table);
-  wrapper.appendChild(wrap);
+    const body = section.querySelector(".tasks-group-body");
+    if (!projectTasks.length) {
+      body.innerHTML = '<div class="empty">No tasks for this project yet.</div>';
+    } else {
+      projectTasks.forEach(task => {
+        const item = document.createElement("div");
+        item.className = "task-row";
+        const dueLabel = BXCore.formatDate(task.dueDate) || "No due date";
+        item.innerHTML = `
+          <div class="task-main">
+            <strong>${task.title || "Task"}</strong>
+            <span class="task-status">Status: ${(task.status || "not-started").replace("-", " ")}</span>
+          </div>
+          <div class="task-meta">Due: ${dueLabel}</div>
+        `;
+        body.appendChild(item);
+      });
+    }
+
+    list.appendChild(section);
+  });
+
+  wrapper.appendChild(list);
 });
 </script>
 

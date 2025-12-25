@@ -12,9 +12,29 @@ document.addEventListener("DOMContentLoaded", async () => {
   const addTaskProjectSelect = document.getElementById("addTaskProjectSelect");
   const addTaskStatus = document.getElementById("addTaskStatus");
   const tasksTableWrapper = document.getElementById("tasksTableWrapper");
+  const actionStatusEl = document.getElementById("tasksActionStatus");
 
-  let data = await BXCore.apiGetAll(true);
-  BXCore.updateSidebarStats(data);
+  const showActionStatus = (message, type = "success") => {
+    if (!actionStatusEl) return;
+    actionStatusEl.classList.remove("alert-success", "alert-error", "alert-info");
+    actionStatusEl.classList.add(`alert-${type}`);
+    actionStatusEl.textContent = message;
+    actionStatusEl.style.display = "block";
+  };
+
+  BXCore.renderSkeleton(tasksTableWrapper, "table", 1);
+
+  let data;
+  try {
+    data = await BXCore.apiGetAll();
+    BXCore.updateSidebarStats(data);
+  } catch (err) {
+    console.error(err);
+    tasksTableWrapper.innerHTML =
+      '<div class="empty">We could not load tasks. Please refresh and try again.</div>';
+    showActionStatus("We could not load tasks. Please refresh and try again.", "error");
+    return;
+  }
 
   let clients = data.clients || [];
   let projects = data.projects || [];
@@ -118,7 +138,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         tr.dataset.taskId = t.taskId;
         tr.innerHTML = `
           <td>${t.title || ""}</td>
-          <td>${proj?.name || "—"}</td>
+          <td>${proj?.name || "Unknown"}</td>
           <td>
             ${
               isAdmin
@@ -168,47 +188,55 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (!row) return;
         const taskId = row.dataset.taskId;
 
-        if (e.target.classList.contains("admin-delete")) {
-          if (!confirm("Delete this task?")) return;
-          try {
-            await BXCore.apiPost({ action: "deleteTask", taskId });
-            data = await BXCore.apiGetAll(true);
-            BXCore.updateSidebarStats(data);
-            projects = data.projects || [];
-            tasks = data.tasks || [];
-            renderTasks();
-          } catch (err) {
-            console.error(err);
-            alert("Failed to delete task.");
-          }
-          return;
+      if (e.target.classList.contains("admin-delete")) {
+        if (!confirm("Delete this task?")) return;
+        BXCore.setButtonLoading(e.target, true, "Deleting...");
+        try {
+          await BXCore.apiPost({ action: "deleteTask", taskId });
+          data = await BXCore.apiGetAll(true);
+          BXCore.updateSidebarStats(data);
+          projects = data.projects || [];
+          tasks = data.tasks || [];
+          renderTasks();
+          showActionStatus("Task removed. The list is up to date.", "success");
+        } catch (err) {
+          console.error(err);
+          showActionStatus("Couldn't delete the task. Please try again.", "error");
+        } finally {
+          BXCore.setButtonLoading(e.target, false);
         }
+        return;
+      }
 
-        if (e.target.classList.contains("admin-save")) {
-          const statusSel = row.querySelector(".admin-status");
-          const progressInput = row.querySelector(".admin-progress");
-          const dueInput = row.querySelector(".admin-dueDate");
-          try {
-            await BXCore.apiPost({
-              action: "updateTask",
-              taskId,
-              status: statusSel.value,
-              progress: Number(progressInput.value || 0),
-              dueDate: dueInput.value || "",
-              updatedAt: new Date().toISOString(),
-            });
-            data = await BXCore.apiGetAll(true);
-            BXCore.updateSidebarStats(data);
-            projects = data.projects || [];
-            tasks = data.tasks || [];
-            renderTasks();
-          } catch (err) {
-            console.error(err);
-            alert("Failed to update task.");
-          }
+      if (e.target.classList.contains("admin-save")) {
+        const statusSel = row.querySelector(".admin-status");
+        const progressInput = row.querySelector(".admin-progress");
+        const dueInput = row.querySelector(".admin-dueDate");
+        BXCore.setButtonLoading(e.target, true, "Saving...");
+        try {
+          await BXCore.apiPost({
+            action: "updateTask",
+            taskId,
+            status: statusSel.value,
+            progress: Number(progressInput.value || 0),
+            dueDate: dueInput.value || "",
+            updatedAt: new Date().toISOString(),
+          });
+          data = await BXCore.apiGetAll(true);
+          BXCore.updateSidebarStats(data);
+          projects = data.projects || [];
+          tasks = data.tasks || [];
+          renderTasks();
+          showActionStatus("Task updated successfully.", "success");
+        } catch (err) {
+          console.error(err);
+          showActionStatus("Couldn't update the task. Please try again.", "error");
+        } finally {
+          BXCore.setButtonLoading(e.target, false);
         }
-      });
-    }
+      }
+    });
+  }
 
     wrap.appendChild(table);
     tasksTableWrapper.appendChild(wrap);
@@ -230,13 +258,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("addTaskForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     if (addTaskStatus) addTaskStatus.style.display = "none";
+    const submitBtn = e.target.querySelector("button[type=\"submit\"]");
 
     const fd = new FormData(e.target);
     const projectId = fd.get("projectId");
     if (!projectId) {
-      alert("Select a project.");
+      showActionStatus("Please select a project before adding a task.", "error");
       return;
     }
+    BXCore.setButtonLoading(submitBtn, true, "Saving...");
 
     const taskId = "task_" + Date.now();
 
@@ -259,6 +289,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         addTaskStatus.style.display = "block";
         setTimeout(() => (addTaskStatus.style.display = "none"), 2000);
       }
+      showActionStatus("Task saved. The list is refreshed.", "success");
 
       data = await BXCore.apiGetAll(true);
       BXCore.updateSidebarStats(data);
@@ -268,7 +299,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       renderTasks();
     } catch (err) {
       console.error(err);
-      alert("Failed to add task.");
+      showActionStatus("Couldn't save the task. Please try again.", "error");
+    } finally {
+      BXCore.setButtonLoading(submitBtn, false);
     }
   });
 
