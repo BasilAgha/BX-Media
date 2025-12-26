@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", async () => {
   const sess = BXCore.requireAuth();
   if (!sess) return;
+  const canManage = sess.role === "admin";
 
   const titleEl = document.getElementById("overviewTitle");
   const subtitleEl = document.getElementById("overviewSubtitle");
@@ -152,6 +153,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     quickActionsEl.addEventListener("click", (e) => {
       const btn = e.target.closest("[data-quick]");
       if (!btn) return;
+      if (btn.disabled || btn.getAttribute("aria-disabled") === "true") return;
       e.preventDefault();
       toggleQuickModal(btn.dataset.quick);
     });
@@ -194,8 +196,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   };
 
-  const renderQuickActions = (projects, tasks, clients) => {
+  const renderQuickActions = (projects, tasks, clients, allowManage) => {
     if (!quickActionsEl) return;
+    const manageAllowed = !!allowManage;
+    const disabledAttr = manageAllowed ? "" : "disabled aria-disabled=\"true\"";
+    const disabledClass = manageAllowed ? "" : " is-disabled";
+    const disabledCopy = manageAllowed
+      ? ""
+      : "Managed by BX Media. Contact your producer for changes.";
     const latestUpdate = (tasks || [])
       .slice()
       .sort(
@@ -207,37 +215,31 @@ document.addEventListener("DOMContentLoaded", async () => {
       : "No updates yet. Activity will show here once work starts.";
 
     quickActionsEl.innerHTML = `
-      <button class="quick-card accent" type="button" data-quick="project">
+      <button class="quick-card accent${disabledClass}" type="button" data-quick="project" ${disabledAttr}>
         <span class="quick-icon"><i class="fas fa-plus"></i></span>
         <div class="quick-copy">
           <strong>Add project</strong>
-          <span>${
-            projects && projects.length
+          <span>${disabledCopy || (projects && projects.length
               ? "Create the next phase or a new client build."
-              : "Start your first project and align the team."
-          }</span>
+              : "Start your first project and align the team.")}</span>
         </div>
       </button>
-      <button class="quick-card" type="button" data-quick="task">
+      <button class="quick-card${disabledClass}" type="button" data-quick="task" ${disabledAttr}>
         <span class="quick-icon"><i class="fas fa-list-check"></i></span>
         <div class="quick-copy">
           <strong>Add task</strong>
-          <span>${
-            tasks && tasks.length
+          <span>${disabledCopy || (tasks && tasks.length
               ? "Log the next deliverable with owners and due dates."
-              : "Capture the first task to begin tracking progress."
-          }</span>
+              : "Capture the first task to begin tracking progress.")}</span>
         </div>
       </button>
-      <button class="quick-card neutral" type="button" data-quick="client">
+      <button class="quick-card neutral${disabledClass}" type="button" data-quick="client" ${disabledAttr}>
         <span class="quick-icon"><i class="fas fa-user-plus"></i></span>
         <div class="quick-copy">
           <strong>Add client</strong>
-          <span>${
-            projects && projects.length
+          <span>${disabledCopy || (projects && projects.length
               ? "Onboard a new client and link their projects."
-              : "Add your first client to get projects and tasks organized."
-          }</span>
+              : "Add your first client to get projects and tasks organized.")}</span>
         </div>
       </button>
     `;
@@ -258,12 +260,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (quickProjectForm) {
     quickProjectForm.addEventListener("submit", async (e) => {
       e.preventDefault();
+      if (!canManage) {
+        setQuickStatus("You do not have permission to add projects.", "error");
+        return;
+      }
       setQuickStatus("");
       const submitBtn = quickProjectForm.querySelector("button[type='submit']");
       const clientId = quickProjectClient?.value;
       const name = quickProjectForm.querySelector("#quickProjectName")?.value.trim();
       const description = quickProjectForm.querySelector("#quickProjectDesc")?.value.trim() || "";
       const driveLink = quickProjectForm.querySelector("#quickProjectDrive")?.value.trim() || "";
+      const projectId = "project_" + Date.now();
 
       if (!clientId || !name) {
         setQuickStatus("Please select a client and add a project name.", "error");
@@ -274,12 +281,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       try {
         await BXCore.apiPost({
           action: "addProject",
-          projectId: "project_" + Date.now(),
+          projectId,
           clientId,
           name,
+          projectName: name,
+          title: name,
           description,
           status: "in-progress",
           driveLink,
+          createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         });
         quickProjectForm.reset();
@@ -297,15 +307,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (quickTaskForm) {
     quickTaskForm.addEventListener("submit", async (e) => {
       e.preventDefault();
+      if (!canManage) {
+        setQuickStatus("You do not have permission to add tasks.", "error");
+        return;
+      }
       setQuickStatus("");
       const submitBtn = quickTaskForm.querySelector("button[type='submit']");
       const projectId = quickTaskProject?.value;
       const title = quickTaskForm.querySelector("#quickTaskTitle")?.value.trim();
       const description = quickTaskForm.querySelector("#quickTaskDesc")?.value.trim() || "";
       const status = quickTaskForm.querySelector("#quickTaskStatus")?.value || "in-progress";
-      const progress = Number(
-        quickTaskForm.querySelector("#quickTaskProgress")?.value || 0
-      );
+      const progress = Number(quickTaskForm.querySelector("#quickTaskProgress")?.value || 0);
       const dueDate = quickTaskForm.querySelector("#quickTaskDue")?.value || "";
 
       if (!projectId || !title) {
@@ -324,6 +336,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           status,
           progress: Number.isFinite(progress) ? progress : 0,
           dueDate,
+          createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         });
         quickTaskForm.reset();
@@ -341,6 +354,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (quickClientForm) {
     quickClientForm.addEventListener("submit", async (e) => {
       e.preventDefault();
+      if (!canManage) {
+        setQuickStatus("You do not have permission to add clients.", "error");
+        return;
+      }
       setQuickStatus("");
       const submitBtn = quickClientForm.querySelector("button[type='submit']");
       const name = quickClientForm.querySelector("#quickClientName")?.value.trim();
@@ -360,6 +377,9 @@ document.addEventListener("DOMContentLoaded", async () => {
           clientName: name,
           username,
           password,
+          status: "active",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         });
         quickClientForm.reset();
         await refreshData();
@@ -422,12 +442,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         },
       ]);
 
-      renderQuickActions(projects, tasks, clients);
+      renderQuickActions(projects, tasks, clients, true);
       renderTimeline(tasks, projects, clients);
     } else {
       const client =
         clients.find((c) => c.clientId === sess.clientId) ||
-        clients.find((c) => c.username === sess.username);
+        clients.find((c) => c.username === sess.username) ||
+        clients[0];
 
       if (titleEl) titleEl.textContent = "Dashboard";
       if (subtitleEl)
@@ -435,16 +456,11 @@ document.addEventListener("DOMContentLoaded", async () => {
           ? `Welcome back, ${client.clientName || sess.username}.`
           : `Welcome back, ${sess.username}.`;
 
-      const clientProjects = projects.filter((p) => p.clientId === client?.clientId);
-      const clientTasks = tasks.filter((t) =>
-        clientProjects.some((p) => p.projectId === t.projectId)
-      );
-
-      const summary = BXCore.computeProjectSummary(clientProjects);
+      const summary = BXCore.computeProjectSummary(projects);
       renderSummaryCards([
         {
           label: "Total projects",
-          value: clientProjects.length,
+          value: projects.length,
           icon: "fas fa-folder-open",
           tone: "neutral",
           helper: "No active projects yet.",
@@ -472,8 +488,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         },
       ]);
 
-      renderQuickActions(clientProjects, clientTasks, clients);
-      renderTimeline(clientTasks, projects, clients);
+      renderQuickActions(projects, tasks, clients, false);
+      renderTimeline(tasks, projects, clients);
     }
   } catch (err) {
     console.error(err);

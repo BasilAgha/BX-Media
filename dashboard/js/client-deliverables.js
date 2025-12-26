@@ -52,19 +52,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  let clientId = sess.clientId;
-  if (!clientId && sess.username) {
-    const match = (data.clients || []).find((c) => c.username === sess.username);
-    clientId = match ? match.clientId : null;
-  }
+  const clients = data.clients || [];
+  const inferredClient =
+    clients.find((c) => c.clientId === sess.clientId) ||
+    clients.find((c) => c.username === sess.username) ||
+    clients[0];
+  const clientId = inferredClient?.clientId || sess.clientId || null;
 
-  const projects = (data.projects || []).filter((p) => p.clientId === clientId);
-  const projectIds = projects.map((p) => p.projectId);
-  const deliverables = (data.deliverables || []).filter((d) => {
-    if (!projectIds.includes(d.projectId)) return false;
-    if (d.clientId && d.clientId !== clientId) return false;
-    return true;
-  });
+  const projects = data.projects || [];
+  const deliverables = data.deliverables || [];
 
   const getProjectName = (projectId) => {
     const project = projects.find((p) => p.projectId === projectId);
@@ -72,7 +68,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   const getClientName = () => {
-    const client = (data.clients || []).find((c) => c.clientId === clientId);
+    const client = clients.find((c) => c.clientId === clientId) || clients[0];
     return client?.clientName || client?.username || "Client";
   };
 

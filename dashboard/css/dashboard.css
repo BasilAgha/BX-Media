@@ -384,6 +384,13 @@ button.is-loading,
   pointer-events: none;
 }
 
+button[disabled],
+.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .ghost,
 .btn-secondary {
   background: transparent;

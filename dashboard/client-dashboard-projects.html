@@ -74,6 +74,8 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
 <script src="js/dashboard-core.js"></script>
 
 <script>
@@ -104,13 +106,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  let clientId = sess.clientId;
-  if (!clientId && sess.username) {
-    const match = (data.clients || []).find((c) => c.username === sess.username);
-    clientId = match ? match.clientId : null;
-  }
-
-  const projects = (data.projects || []).filter((p) => p.clientId === clientId);
+  const projects = data.projects || [];
   const tasks = data.tasks || [];
 
   projectsList.innerHTML = "";

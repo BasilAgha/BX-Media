@@ -2,11 +2,26 @@
 // Shared helpers: API, auth, utilities, sidebar wiring
 
 (function() {
-  const API_BASE = "https://script.google.com/macros/s/AKfycbwavzXTfxTcVduAbnzj9wJq9CF2lbbLlkvD7MtQb0-698c9-Gm3NoLmNDyBYCTfkQ3Omg/exec";
   const SESSION_KEY = "bxm_dashboard_session_v1";
   let cachedData = null;
-  let cachedRaw = null;
   let firstLoadPending = true;
+  let supabaseClient = null;
+
+  function getSupabaseClient() {
+    if (supabaseClient) return supabaseClient;
+    if (window.BXSupabase?.client) {
+      supabaseClient = window.BXSupabase.client;
+      return supabaseClient;
+    }
+    if (!window.supabase || typeof window.supabase.createClient !== "function") {
+      throw new Error("Supabase client library not loaded");
+    }
+    supabaseClient = window.supabase.createClient(
+      "https://lhtqlftxctxjguxhzvxq.supabase.co",
+      "sb_publishable_3jTA4mBXkPdSESdaDarYdA_GGx-hh8h"
+    );
+    return supabaseClient;
+  }
 
   function ensurePageLoader() {
     if (document.getElementById("pageLoader")) return;
@@ -92,56 +107,124 @@
     return obj;
   }
 
+  function logSessionStatus() {
+    const sess = getLocalSession();
+    if (sess) {
+      console.log("SESSION FOUND", {
+        username: sess.username,
+        role: sess.role,
+        client_id: sess.client_id,
+      });
+    } else {
+      console.log("NO SESSION: redirecting to login");
+      const path = (window.location.pathname.split("/").pop() || "").toLowerCase();
+      if (path !== "login.html") {
+        window.location.href = "login.html";
+      }
+    }
+  }
+
+  function warnRlsStatus() {
+    console.warn(
+      "RLS WARNING: Unable to verify from the client. Ensure Row Level Security is disabled on all tables."
+    );
+  }
+
+  function withClientIdAliases(rows) {
+    return (rows || []).map((row) => {
+      if (!row || typeof row !== "object") return row;
+      const next = { ...row };
+      if (next.client_id !== undefined && next.clientId === undefined) next.clientId = next.client_id;
+      if (next.project_id !== undefined && next.projectId === undefined) next.projectId = next.project_id;
+      if (next.task_id !== undefined && next.taskId === undefined) next.taskId = next.task_id;
+      if (next.deliverable_id !== undefined && next.deliverableId === undefined) next.deliverableId = next.deliverable_id;
+      if (next.comment_id !== undefined && next.commentId === undefined) next.commentId = next.comment_id;
+      return next;
+    });
+  }
+
   async function apiGetAll(force = false, includeInactiveClients = false) {
-    if (!force && cachedData && !includeInactiveClients) return cachedData;
-    if (!force && cachedRaw && includeInactiveClients) return cachedRaw;
+    if (!force && cachedData) return cachedData;
     if (firstLoadPending) showPageLoader("Loading dashboard...");
     try {
-      const res = await fetch(API_BASE + "?action=getAll");
-      if (!res.ok) throw new Error("Failed to fetch data");
-      const json = await res.json();
-      const body = unwrapBody(json) || {};
-
-      const normalizedClients = validateClientsSchema(body.clients || body.Clients || []);
-      const baseData = {
-        ok: body.ok !== false,
-        accounts: body.accounts || body.Accounts || [],
-        clients: normalizedClients,
-        projects: body.projects || body.Projects || [],
-        tasks: body.tasks || body.Tasks || [],
-        deliverables: body.deliverables || body.Deliverables || [],
-      };
-
-      const sess = getSession();
-      let filtered = { ...baseData };
-      if (sess && sess.role === "client") {
-        const clientId = sess.clientId;
-        const clientFiltered = (baseData.clients || []).filter(
-          (c) => c.clientId === clientId && c.status === "active"
-        );
-        const projectsFiltered = (baseData.projects || []).filter((p) => p.clientId === clientId);
-        const projectIds = new Set(projectsFiltered.map((p) => p.projectId));
-        const tasksFiltered = (baseData.tasks || []).filter((t) => projectIds.has(t.projectId));
-        const deliverablesFiltered = (baseData.deliverables || []).filter(
-          (d) =>
-            d.clientId === clientId &&
-            (d.visibleToClient === true || String(d.visibleToClient) === "true") &&
-            String(d.status || "").toLowerCase() !== "archived"
-        );
-        filtered = {
-          ok: baseData.ok,
-          accounts: [],
-          clients: clientFiltered,
-          projects: projectsFiltered,
-          tasks: tasksFiltered,
-          deliverables: deliverablesFiltered,
-        };
+      const supabase = getSupabaseClient();
+      const sess = getLocalSession();
+      if (!sess) {
+        console.log("NO SESSION: redirecting to login");
+        window.location.href = "login.html";
+        throw new Error("Not authenticated");
       }
 
-      cachedRaw = baseData;
-      cachedData = filtered;
+      warnRlsStatus();
 
-      return includeInactiveClients ? cachedRaw : cachedData;
+      const isAdmin = sess.role === "admin";
+      if (isAdmin) {
+        console.log("ADMIN MODE");
+      } else {
+        console.log("CLIENT MODE", { client_id: sess.client_id });
+      }
+
+      const clientId = sess.client_id;
+      let accountsRes;
+      let clientsRes;
+      let projectsRes;
+      let tasksRes;
+      let commentsRes;
+      let deliverablesRes;
+
+      if (isAdmin) {
+        const requests = [
+          supabase.from("accounts").select("*"),
+          supabase.from("clients").select("*"),
+          supabase.from("projects").select("*"),
+          supabase.from("tasks").select("*"),
+          supabase.from("comments").select("*"),
+          supabase.from("deliverables").select("*"),
+        ];
+        const results = await Promise.all(requests);
+        [accountsRes, clientsRes, projectsRes, tasksRes, commentsRes, deliverablesRes] = results;
+        const firstError = results.find((res) => res.error)?.error;
+        if (firstError) throw firstError;
+      } else {
+        accountsRes = await supabase.from("accounts").select("*").eq("username", sess.username);
+        if (accountsRes.error) throw accountsRes.error;
+
+        clientsRes = await supabase.from("clients").select("*").eq("client_id", clientId);
+        if (clientsRes.error) throw clientsRes.error;
+
+        projectsRes = await supabase.from("projects").select("*").eq("client_id", clientId);
+        if (projectsRes.error) throw projectsRes.error;
+
+        const projectIds = (projectsRes.data || []).map((row) => row.project_id || row.projectId).filter(Boolean);
+
+        if (projectIds.length) {
+          tasksRes = await supabase.from("tasks").select("*").in("project_id", projectIds);
+          if (tasksRes.error) throw tasksRes.error;
+
+          commentsRes = await supabase.from("comments").select("*").in("project_id", projectIds);
+          if (commentsRes.error) throw commentsRes.error;
+
+          deliverablesRes = await supabase.from("deliverables").select("*").in("project_id", projectIds);
+          if (deliverablesRes.error) throw deliverablesRes.error;
+        } else {
+          tasksRes = { data: [] };
+          commentsRes = { data: [] };
+          deliverablesRes = { data: [] };
+        }
+      }
+
+      const normalizedClients = validateClientsSchema(withClientIdAliases(clientsRes.data || []));
+      cachedData = {
+        ok: true,
+        accounts: withClientIdAliases(accountsRes.data || []),
+        clients: normalizedClients,
+        projects: withClientIdAliases(projectsRes.data || []),
+        tasks: withClientIdAliases(tasksRes.data || []),
+        comments: withClientIdAliases(commentsRes.data || []),
+        deliverables: withClientIdAliases(deliverablesRes.data || []),
+      };
+
+      return cachedData;
     } finally {
       if (firstLoadPending) {
         firstLoadPending = false;
@@ -155,36 +238,215 @@
       return { ok: false, error: "Invalid payload" };
     }
 
-    // Enforce lifecycle rules
-    if (payload.action === "deleteClient") {
-      return { ok: false, error: "Client deletion is disabled. Use status lifecycle instead.", status: "archived" };
-    }
-
-    if (payload.action === "addClient") {
-      payload.status = "active";
-      payload.createdAt = payload.createdAt || new Date().toISOString();
-      payload.updatedAt = payload.updatedAt || new Date().toISOString();
-    }
+    const supabase = getSupabaseClient();
 
     if (payload.action === "login") {
       cachedData = null;
-      cachedRaw = null;
+      const username = String(payload.username || "").trim();
+      const password = String(payload.password || "");
+      console.log("LOGIN QUERY", { username });
+      const response = await supabase
+        .from("accounts")
+        .select("*")
+        .eq("username", username)
+        .eq("password", password)
+        .eq("status", "active")
+        .maybeSingle();
+      console.log("LOGIN RESPONSE", { data: response.data, error: response.error });
+
+      if (response.error) {
+        console.log("LOGIN ERROR", response.error);
+        return { ok: false, error: response.error.message || "Login failed" };
+      }
+      if (!response.data) {
+        console.log("LOGIN FAILED: no matching account");
+        return { ok: false, error: "Invalid credentials" };
+      }
+
+      console.log("LOGIN SUCCESS", {
+        username: response.data.username,
+        role: response.data.role,
+        client_id: response.data.client_id,
+      });
+
+      return {
+        ok: true,
+        user: {
+          username: response.data.username,
+          role: response.data.role,
+          client_id: response.data.client_id,
+        },
+      };
     }
 
-    const res = await fetch(API_BASE, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
+    const action = payload.action || "";
 
-    if (!res.ok) throw new Error("Request failed");
+    const pickFields = (source, fields) => {
+      const out = {};
+      fields.forEach((key) => {
+        if (source[key] !== undefined) out[key] = source[key];
+      });
+      return out;
+    };
 
-    const json = await res.json();
+    let response;
+    if (action === "addClient") {
+      const data = pickFields(payload, [
+        "clientId",
+        "clientName",
+        "username",
+        "password",
+        "status",
+        "createdAt",
+        "updatedAt",
+      ]);
+      response = await supabase.from("clients").insert([data]);
+    } else if (action === "updateClient") {
+      const data = pickFields(payload, [
+        "clientName",
+        "username",
+        "password",
+        "status",
+        "updatedAt",
+      ]);
+      response = await supabase.from("clients").update(data).eq("clientId", payload.clientId);
+    } else if (action === "deleteClient") {
+      response = await supabase.from("clients").delete().eq("clientId", payload.clientId);
+    } else if (action === "addProject") {
+      const data = pickFields(payload, [
+        "projectId",
+        "clientId",
+        "name",
+        "description",
+        "status",
+        "driveLink",
+        "createdAt",
+        "updatedAt",
+      ]);
+      response = await supabase.from("projects").insert([data]);
+    } else if (action === "updateProject") {
+      const data = pickFields(payload, [
+        "clientId",
+        "name",
+        "description",
+        "status",
+        "driveLink",
+        "updatedAt",
+      ]);
+      response = await supabase.from("projects").update(data).eq("projectId", payload.projectId);
+    } else if (action === "deleteProject") {
+      response = await supabase.from("projects").delete().eq("projectId", payload.projectId);
+    } else if (action === "addTask") {
+      const data = pickFields(payload, [
+        "taskId",
+        "projectId",
+        "title",
+        "description",
+        "status",
+        "progress",
+        "dueDate",
+        "createdAt",
+        "updatedAt",
+      ]);
+      response = await supabase.from("tasks").insert([data]);
+    } else if (action === "updateTask") {
+      const data = pickFields(payload, [
+        "projectId",
+        "title",
+        "description",
+        "status",
+        "progress",
+        "dueDate",
+        "updatedAt",
+      ]);
+      response = await supabase.from("tasks").update(data).eq("taskId", payload.taskId);
+    } else if (action === "deleteTask") {
+      response = await supabase.from("tasks").delete().eq("taskId", payload.taskId);
+    } else if (action === "addDeliverable") {
+      const data = pickFields(payload, [
+        "deliverableId",
+        "clientId",
+        "projectId",
+        "name",
+        "status",
+        "coverImage",
+        "description",
+        "deliveryLink",
+        "downloadLink",
+        "previewLink",
+        "driveLink",
+        "visibleToClient",
+        "createdAt",
+        "updatedAt",
+      ]);
+      response = await supabase.from("deliverables").insert([data]);
+    } else if (action === "updateDeliverable") {
+      const data = pickFields(payload, [
+        "clientId",
+        "projectId",
+        "name",
+        "status",
+        "coverImage",
+        "description",
+        "deliveryLink",
+        "downloadLink",
+        "previewLink",
+        "driveLink",
+        "visibleToClient",
+        "updatedAt",
+      ]);
+      response = await supabase.from("deliverables").update(data).eq("deliverableId", payload.deliverableId);
+    } else if (action === "deleteDeliverable") {
+      response = await supabase.from("deliverables").delete().eq("deliverableId", payload.deliverableId);
+    } else if (action === "addUpdate") {
+      const data = pickFields(payload, [
+        "commentId",
+        "taskId",
+        "projectId",
+        "body",
+        "createdAt",
+        "updatedAt",
+      ]);
+      response = await supabase.from("comments").insert([data]);
+    } else if (action === "updateUpdate") {
+      const data = pickFields(payload, ["body", "updatedAt"]);
+      response = await supabase.from("comments").update(data).eq("commentId", payload.commentId);
+    } else if (action === "deleteUpdate") {
+      response = await supabase.from("comments").delete().eq("commentId", payload.commentId);
+    } else {
+      return { ok: false, error: "Unknown action" };
+    }
 
-    // Important: force cache refresh
+    if (response?.error) {
+      return { ok: false, error: response.error.message };
+    }
+
     cachedData = null;
-    cachedRaw = null;
+    return { ok: true, data: response?.data || null };
+  }
 
-    return unwrapBody(json);
+  async function fetchAccountForUser(user) {
+    if (!user) return null;
+    const supabase = getSupabaseClient();
+    const candidates = [
+      { column: "user_id", value: user.id },
+      { column: "id", value: user.id },
+      { column: "email", value: user.email },
+    ];
+
+    for (const candidate of candidates) {
+      if (!candidate.value) continue;
+      const { data, error } = await supabase
+        .from("accounts")
+        .select("*")
+        .eq(candidate.column, candidate.value)
+        .maybeSingle();
+      if (error) {
+        continue;
+      }
+      if (data) return data;
+    }
+    return null;
   }
 
   async function sha256(text) {
@@ -267,7 +529,7 @@
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   }
 
-  function getSession() {
+  function getLocalSession() {
     try {
       const raw = localStorage.getItem(SESSION_KEY);
       return raw ? JSON.parse(raw) : null;
@@ -299,7 +561,7 @@
   }
 
   function requireAuth(options = {}, redirectIfMissing = true) {
-    const sess = getSession();
+    const sess = getLocalSession();
     if (!sess && redirectIfMissing) {
       showPageLoader("Redirecting to sign in...");
       window.location.href = "login.html";
@@ -310,36 +572,24 @@
     if (options.role && sess.role !== options.role) {
       // If wrong role, send to overview
       showPageLoader("Redirecting...");
-      window.location.href = "dashboard-overview.html";
+      window.location.href = sess.role === "client" ? "client-dashboard-overview.html" : "dashboard-overview.html";
       return null;
     }
     return sess;
   }
 
+  function disableButton(btn, reason) {
+    if (!btn) return;
+    btn.disabled = true;
+    btn.classList.add("is-disabled");
+    btn.setAttribute("aria-disabled", "true");
+    if (reason && !btn.title) btn.title = reason;
+  }
+
   function updateSidebarStats(data) {
     if (!data) return;
-    const sess = getSession();
-
-    let projects = data.projects || [];
-    let tasks = data.tasks || [];
-
-    if (sess && sess.role === "client") {
-      const clients = data.clients || [];
-      let clientId = sess.clientId;
-      if (!clientId && sess.username) {
-        const match = clients.find((c) => c.username === sess.username);
-        clientId = match ? match.clientId : null;
-      }
-
-      if (clientId) {
-        projects = projects.filter((p) => p.clientId === clientId);
-        const projectIds = new Set(projects.map((p) => p.projectId));
-        tasks = tasks.filter((t) => projectIds.has(t.projectId));
-      } else {
-        projects = [];
-        tasks = [];
-      }
-    }
+    const projects = data.projects || [];
+    const tasks = data.tasks || [];
 
     const summary = computeProjectSummary(projects);
 
@@ -358,7 +608,7 @@
   }
 
   function renderClientHeader(clients = []) {
-    const sess = getSession();
+    const sess = getLocalSession();
     if (!sess) return;
     const nameEl = document.getElementById("headerClientName");
     const statusEl = document.getElementById("headerClientStatus");
@@ -382,7 +632,7 @@
   }
 
   function initSidebarChrome() {
-    const sess = getSession();
+    const sess = getLocalSession();
 
     const logoutBtn = document.getElementById("logoutBtn");
     if (logoutBtn) {
@@ -439,12 +689,16 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     ensurePageLoader();
+    logSessionStatus();
     initSidebarChrome();
   });
 
   window.BXCore = {
     apiGetAll,
     apiPost,
+    fetchAccountForUser,
+    getSupabaseClient,
+    logSessionStatus,
     sha256,
     computeSummary,
     computeProjectProgress,
@@ -452,7 +706,7 @@
     formatDate,
     formatDateTime,
     saveSession,
-    getSession,
+    getLocalSession,
     clearSession,
     requireAuth,
     updateSidebarStats,
@@ -463,7 +717,7 @@
     renderSkeleton,
     validateClientsSchema,
     ALLOWED_CLIENT_STATUSES,
-    API_BASE,
+    disableButton,
   };
 })();
 

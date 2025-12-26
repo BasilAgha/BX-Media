@@ -19,16 +19,23 @@ document.addEventListener("DOMContentLoaded", () => {
     statusBox.style.display = message ? "block" : "none";
   };
 
+  const getCore = () => window.BXCore;
+
   const setLoading = (isLoading, message) => {
-    if (submitBtn) BXCore.setButtonLoading(submitBtn, isLoading, message || "Signing in...");
+    const core = getCore();
+    if (!core) {
+      setStatus("Login system not ready. Please refresh the page.", "error");
+      return;
+    }
+    if (submitBtn) core.setButtonLoading(submitBtn, isLoading, message || "Signing in...");
     inputs.forEach((input) => {
       input.disabled = isLoading;
     });
     form.setAttribute("aria-busy", isLoading ? "true" : "false");
     if (isLoading) {
-      BXCore.showPageLoader(message || "Signing you in...");
+      core.showPageLoader(message || "Signing you in...");
     } else {
-      BXCore.hidePageLoader();
+      core.hidePageLoader();
     }
     if (message) setStatus(message, "info");
   };
@@ -38,13 +45,19 @@ document.addEventListener("DOMContentLoaded", () => {
     if (errorBox) errorBox.style.display = "none";
     setStatus("", "info");
 
+    const core = getCore();
+    if (!core) {
+      setStatus("Login system not ready. Please refresh the page.", "error");
+      return;
+    }
+
     const fd = new FormData(form);
     const username = String(fd.get("username") || "").trim();
     const password = String(fd.get("password") || "");
     setLoading(true, "Signing in...");
 
     try {
-      const resp = await BXCore.apiPost({
+      const resp = await core.apiPost({
         action: "login",
         username,
         password,
@@ -61,30 +74,36 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      if (resp.role === "admin" && resp.admin) {
-        BXCore.saveSession({
-          username: resp.admin.username,
-          role: "admin",
-          clientId: null,
-          clientName: resp.admin.name || resp.admin.username,
+      if (resp.user) {
+        core.saveSession({
+          username: resp.user.username || username,
+          role: resp.user.role || "client",
+          client_id: resp.user.client_id || null,
+          clientId: resp.user.client_id || null,
         });
-        setStatus("Signed in. Redirecting to your dashboard...", "success");
-        BXCore.showPageLoader("Redirecting...");
-        setTimeout(() => {
-          window.location.href = "dashboard-overview.html";
-        }, 350);
-        return;
-      }
 
-      if (resp.role === "client" && resp.client) {
-        BXCore.saveSession({
-          username: resp.client.username || username,
-          role: "client",
-          clientId: resp.client.clientId,
-          clientName: resp.client.clientName,
-        });
+        const stored = core.getLocalSession();
+        if (stored?.username) {
+          const supabase = core.getSupabaseClient();
+          const verify = await supabase
+            .from("accounts")
+            .select("*")
+            .eq("username", stored.username)
+            .maybeSingle();
+          console.log("LOGIN VERIFY", { data: verify.data, error: verify.error });
+        }
+
+        if (resp.user.role === "admin") {
+          setStatus("Signed in. Redirecting to your dashboard...", "success");
+          core.showPageLoader("Redirecting...");
+          setTimeout(() => {
+            window.location.href = "dashboard-overview.html";
+          }, 350);
+          return;
+        }
+
         setStatus("Signed in. Redirecting to your dashboard...", "success");
-        BXCore.showPageLoader("Redirecting...");
+        core.showPageLoader("Redirecting...");
         setTimeout(() => {
           window.location.href = "client-dashboard-overview.html";
         }, 350);

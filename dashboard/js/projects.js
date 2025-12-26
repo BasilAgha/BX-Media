@@ -83,6 +83,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       const pTasks = tasks.filter((t) => t.projectId === p.projectId);
       const progress = BXCore.computeProjectProgress(pTasks);
       const client = clients.find((c) => c.clientId === p.clientId);
+      const clientOptions = clients
+        .map(
+          (c) =>
+            `<option value="${c.clientId}" ${c.clientId === p.clientId ? "selected" : ""}>${
+              c.clientName || c.username || c.clientId
+            }</option>`
+        )
+        .join("");
 
       const card = document.createElement("article");
       card.className = "project-card";
@@ -141,6 +149,12 @@ document.addEventListener("DOMContentLoaded", async () => {
               </select>
             </div>
             <div class="form-row">
+              <label>Client</label>
+              <select class="admin-project-client">
+                ${clientOptions}
+              </select>
+            </div>
+            <div class="form-row">
               <label>Drive link</label>
               <input class="admin-project-drive" type="url" value="${p.driveLink || ""}" placeholder="https://drive.google.com/..." />
             </div>
@@ -180,6 +194,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const nameInput = card.querySelector(".admin-project-name");
         const descInput = card.querySelector(".admin-project-desc");
         const statusSelect = card.querySelector(".admin-project-status");
+        const clientSelectEl = card.querySelector(".admin-project-client");
         const driveInput = card.querySelector(".admin-project-drive");
 
         if (deleteBtn) {
@@ -226,6 +241,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             title: nextName,
             description: nextDescription,
             status: nextStatus,
+            clientId: clientSelectEl ? clientSelectEl.value : null,
             driveLink: nextDriveLink,
             updatedAt: new Date().toISOString(),
           });

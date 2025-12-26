@@ -1,6 +1,6 @@
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const sess = BXCore.requireAuth();
+  const sess = BXCore.requireAuth({ role: "admin" });
   if (!sess) return;
 
   const isAdmin = sess.role === "admin";
@@ -122,6 +122,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
+  function buildProjectOptions(selectedId) {
+    return projects
+      .map(
+        (p) =>
+          `<option value="${p.projectId}" ${p.projectId === selectedId ? "selected" : ""}>${
+            p.name || p.projectId
+          }</option>`
+      )
+      .join("");
+  }
+
   function renderTasks() {
     tasksTableWrapper.innerHTML = "";
 
@@ -179,7 +190,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         tr.dataset.taskId = t.taskId;
         tr.innerHTML = `
           <td>${t.title || ""}</td>
-          <td>${proj?.name || "Unknown"}</td>
+          <td>
+            <select class="admin-project">
+              ${buildProjectOptions(t.projectId)}
+            </select>
+          </td>
           <td>
             ${
               isAdmin
@@ -250,6 +265,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       if (e.target.classList.contains("admin-save")) {
+        const projectSel = row.querySelector(".admin-project");
         const statusSel = row.querySelector(".admin-status");
         const progressInput = row.querySelector(".admin-progress");
         const dueInput = row.querySelector(".admin-dueDate");
@@ -258,6 +274,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           await BXCore.apiPost({
             action: "updateTask",
             taskId,
+            projectId: projectSel.value,
             status: statusSel.value,
             progress: Number(progressInput.value || 0),
             dueDate: dueInput.value || "",
@@ -310,17 +327,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     BXCore.setButtonLoading(submitBtn, true, "Saving...");
 
     const taskId = "task_" + Date.now();
+    const title = String(fd.get("title") || "").trim();
+    const description = String(fd.get("description") || "").trim();
+    const status = String(fd.get("status") || "in-progress").trim();
+    const progress = Number(fd.get("progress") || 0);
+    const dueDate = String(fd.get("dueDate") || "");
 
     try {
       await BXCore.apiPost({
         action: "addTask",
         taskId,
         projectId,
-        title: fd.get("title"),
-        description: fd.get("description"),
-        status: fd.get("status"),
-        progress: Number(fd.get("progress") || 0),
-        dueDate: fd.get("dueDate") || "",
+        title,
+        description,
+        status,
+        progress: Number.isFinite(progress) ? progress : 0,
+        dueDate,
+        createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
 
