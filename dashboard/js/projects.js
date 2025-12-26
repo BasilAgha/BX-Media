@@ -213,14 +213,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         BXCore.setButtonLoading(saveBtn, true, "Saving...");
+        const nextName = nameInput.value.trim();
+        const nextDescription = descInput.value.trim();
+        const nextStatus = statusSelect.value;
+        const nextDriveLink = driveInput.value.trim();
         try {
           await BXCore.apiPost({
             action: "updateProject",
             projectId,
-            name: nameInput.value.trim(),
-            description: descInput.value.trim(),
-            status: statusSelect.value,
-            driveLink: driveInput.value.trim(),
+            name: nextName,
+            projectName: nextName,
+            title: nextName,
+            description: nextDescription,
+            status: nextStatus,
+            driveLink: nextDriveLink,
             updatedAt: new Date().toISOString(),
           });
           data = await BXCore.apiGetAll(true);
@@ -282,16 +288,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     BXCore.setButtonLoading(submitBtn, true, "Saving...");
 
     const projectId = "project_" + Date.now();
+    const name = String(fd.get("name") || "").trim();
+    const description = String(fd.get("description") || "").trim();
+    const status = String(fd.get("status") || "in-progress").trim();
+    const driveLink = String(fd.get("driveLink") || "").trim();
 
     try {
       const resp = await BXCore.apiPost({
         action: "addProject",
         projectId,
         clientId,
-        name: fd.get("name"),
-        description: fd.get("description"),
-        status: fd.get("status"),
-        driveLink: fd.get("driveLink"),
+        name,
+        projectName: name,
+        title: name,
+        description,
+        status,
+        driveLink,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       });
       if (resp && resp.error) throw new Error(resp.error);
 

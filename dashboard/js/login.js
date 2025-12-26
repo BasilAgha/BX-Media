@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setStatus("", "info");
 
     const fd = new FormData(form);
-    const username = String(fd.get("username") || "").trim().toLowerCase();
+    const username = String(fd.get("username") || "").trim();
     const password = String(fd.get("password") || "");
     setLoading(true, "Signing in...");
 
@@ -78,7 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (resp.role === "client" && resp.client) {
         BXCore.saveSession({
-          username: username,
+          username: resp.client.username || username,
           role: "client",
           clientId: resp.client.clientId,
           clientName: resp.client.clientName,

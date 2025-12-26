@@ -423,6 +423,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const name = String(fd.get("name") || "").trim();
     const clientId = String(fd.get("clientId") || "").trim();
     const projectId = String(fd.get("projectId") || "").trim();
+    const deliveryLink = String(fd.get("deliveryLink") || "").trim();
+    const description = String(fd.get("description") || "").trim();
     if (!name) {
       showActionStatus("Deliverable name is required.", "error");
       return;
@@ -450,9 +452,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         name,
         status: normalizeStatus(fd.get("status") || "in-progress"),
         coverImage,
-        description: fd.get("description"),
-        deliveryLink: fd.get("deliveryLink"),
-        downloadLink: fd.get("deliveryLink"),
+        coverPhoto: coverImage,
+        coverUrl: coverImage,
+        description,
+        deliveryLink,
+        downloadLink: deliveryLink,
+        previewLink: deliveryLink,
+        driveLink: deliveryLink,
         visibleToClient: addVisibleInput?.checked ? true : false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -492,6 +498,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const name = editName.value.trim();
     const clientId = editClientSelect.value;
     const projectId = editProjectSelect.value;
+    const deliveryLink = editDeliveryLink.value.trim();
+    const description = editDescription.value.trim();
     if (!name) {
       showEditStatus("Deliverable name is required.", "error");
       return;
@@ -514,9 +522,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         name,
         status: normalizeStatus(editStatus.value),
         coverImage,
-        description: editDescription.value,
-        deliveryLink: editDeliveryLink.value,
-        downloadLink: editDeliveryLink.value,
+        coverPhoto: coverImage,
+        coverUrl: coverImage,
+        description,
+        deliveryLink,
+        downloadLink: deliveryLink,
+        previewLink: deliveryLink,
+        driveLink: deliveryLink,
         visibleToClient: editVisibleInput?.checked ? true : false,
         updatedAt: new Date().toISOString(),
       });
