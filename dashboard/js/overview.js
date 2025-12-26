@@ -5,11 +5,23 @@ document.addEventListener("DOMContentLoaded", async () => {
   const titleEl = document.getElementById("overviewTitle");
   const subtitleEl = document.getElementById("overviewSubtitle");
   const summaryEl = document.getElementById("overviewSummary");
-  const projectsEl = document.getElementById("overviewProjects");
+  const quickActionsEl = document.getElementById("overviewQuickActions");
   const tasksEl = document.getElementById("overviewTasks");
-  const isClientView = !!document.getElementById("overviewActiveProjects");
-  const activeProjectsEl = document.getElementById("overviewActiveProjects") || projectsEl;
   const activityEl = document.getElementById("overviewActivity") || tasksEl;
+  const quickModal = document.getElementById("quickActionModal");
+  const quickModalTitle = document.getElementById("quickModalTitle");
+  const quickModalHelper = document.getElementById("quickModalHelper");
+  const quickModalStatus = document.getElementById("quickModalStatus");
+  const quickCloseBtn = document.getElementById("quickModalClose");
+  const quickProjectForm = document.getElementById("quickProjectForm");
+  const quickTaskForm = document.getElementById("quickTaskForm");
+  const quickClientForm = document.getElementById("quickClientForm");
+  const quickProjectClient = document.getElementById("quickProjectClient");
+  const quickTaskProject = document.getElementById("quickTaskProject");
+
+  let clients = [];
+  let projects = [];
+  let tasks = [];
 
   const renderTimeline = (items, projects, clients) => {
     if (!activityEl) return;
@@ -76,7 +88,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         <span class="summary-icon"><i class="${icon}"></i></span>
         <div>
           <span>${label}</span>
-          <strong>${showEmpty ? "—" : value}</strong>
+          <strong>${showEmpty ? "--" : value}</strong>
           ${showEmpty ? `<span class="summary-helper">${helper}</span>` : ""}
         </div>
       `;
@@ -84,18 +96,294 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   };
 
+  const setQuickStatus = (message = "", type = "error") => {
+    if (!quickModalStatus) return;
+    if (!message) {
+      quickModalStatus.style.display = "none";
+      return;
+    }
+    quickModalStatus.classList.remove("alert-error", "alert-success", "alert-info");
+    quickModalStatus.classList.add(`alert-${type}`);
+    quickModalStatus.textContent = message;
+    quickModalStatus.style.display = "block";
+  };
+
+  const toggleQuickModal = (type = "project") => {
+    if (!quickModal) return;
+    const forms = {
+      project: quickProjectForm,
+      task: quickTaskForm,
+      client: quickClientForm,
+    };
+    Object.values(forms).forEach((f) => {
+      if (!f) return;
+      f.style.display = "none";
+    });
+    const activeForm = forms[type] || forms.project;
+    if (activeForm) activeForm.style.display = "grid";
+
+    const helperCopy =
+      type === "project"
+        ? "Create a project and assign it to a client."
+        : type === "task"
+          ? "Drop in a task with status, progress, and due date."
+          : "Add a client account so you can start projects for them.";
+    if (quickModalTitle) quickModalTitle.textContent = `Quick add ${type}`;
+    if (quickModalHelper) quickModalHelper.textContent = helperCopy;
+    setQuickStatus("");
+
+    quickModal.classList.add("is-open");
+    quickModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+  };
+
+  const closeQuickModal = () => {
+    if (!quickModal) return;
+    quickModal.classList.remove("is-open");
+    quickModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+  };
+
+  const bindQuickActions = () => {
+    if (!quickActionsEl) return;
+    if (quickActionsEl.dataset.bound === "true") return;
+    quickActionsEl.dataset.bound = "true";
+
+    quickActionsEl.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-quick]");
+      if (!btn) return;
+      e.preventDefault();
+      toggleQuickModal(btn.dataset.quick);
+    });
+
+    if (quickCloseBtn) quickCloseBtn.addEventListener("click", closeQuickModal);
+    if (quickModal) {
+      const backdrop = quickModal.querySelector(".modal-backdrop");
+      if (backdrop) backdrop.addEventListener("click", closeQuickModal);
+    }
+    document.querySelectorAll("[data-close-modal]").forEach((btn) => {
+      btn.addEventListener("click", closeQuickModal);
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && quickModal?.classList.contains("is-open")) {
+        closeQuickModal();
+      }
+    });
+  };
+
+  const populateQuickSelects = (clients, projects) => {
+    if (quickProjectClient) {
+      quickProjectClient.innerHTML = "";
+      (clients || []).forEach((c) => {
+        const opt = document.createElement("option");
+        opt.value = c.clientId;
+        opt.textContent = c.clientName || c.username || c.clientId;
+        quickProjectClient.appendChild(opt);
+      });
+    }
+
+    if (quickTaskProject) {
+      quickTaskProject.innerHTML = "";
+      (projects || []).forEach((p) => {
+        const opt = document.createElement("option");
+        opt.value = p.projectId;
+        opt.textContent = p.name || "Untitled project";
+        quickTaskProject.appendChild(opt);
+      });
+    }
+  };
+
+  const renderQuickActions = (projects, tasks, clients) => {
+    if (!quickActionsEl) return;
+    const latestUpdate = (tasks || [])
+      .slice()
+      .sort(
+        (a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0)
+      )
+      .find((t) => t.updatedAt || t.createdAt);
+    const updatesLabel = latestUpdate
+      ? `Last activity ${BXCore.formatDateTime(latestUpdate.updatedAt || latestUpdate.createdAt)}`
+      : "No updates yet. Activity will show here once work starts.";
+
+    quickActionsEl.innerHTML = `
+      <button class="quick-card accent" type="button" data-quick="project">
+        <span class="quick-icon"><i class="fas fa-plus"></i></span>
+        <div class="quick-copy">
+          <strong>Add project</strong>
+          <span>${
+            projects && projects.length
+              ? "Create the next phase or a new client build."
+              : "Start your first project and align the team."
+          }</span>
+        </div>
+      </button>
+      <button class="quick-card" type="button" data-quick="task">
+        <span class="quick-icon"><i class="fas fa-list-check"></i></span>
+        <div class="quick-copy">
+          <strong>Add task</strong>
+          <span>${
+            tasks && tasks.length
+              ? "Log the next deliverable with owners and due dates."
+              : "Capture the first task to begin tracking progress."
+          }</span>
+        </div>
+      </button>
+      <button class="quick-card neutral" type="button" data-quick="client">
+        <span class="quick-icon"><i class="fas fa-user-plus"></i></span>
+        <div class="quick-copy">
+          <strong>Add client</strong>
+          <span>${
+            projects && projects.length
+              ? "Onboard a new client and link their projects."
+              : "Add your first client to get projects and tasks organized."
+          }</span>
+        </div>
+      </button>
+    `;
+
+    populateQuickSelects(clients || [], projects || []);
+    bindQuickActions();
+  };
+
+  const refreshData = async () => {
+    const fresh = await BXCore.apiGetAll(true);
+    BXCore.updateSidebarStats(fresh);
+    clients = fresh.clients || [];
+    projects = fresh.projects || [];
+    tasks = fresh.tasks || [];
+    populateQuickSelects(clients, projects);
+  };
+
+  if (quickProjectForm) {
+    quickProjectForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      setQuickStatus("");
+      const submitBtn = quickProjectForm.querySelector("button[type='submit']");
+      const clientId = quickProjectClient?.value;
+      const name = quickProjectForm.querySelector("#quickProjectName")?.value.trim();
+      const description = quickProjectForm.querySelector("#quickProjectDesc")?.value.trim() || "";
+      const driveLink = quickProjectForm.querySelector("#quickProjectDrive")?.value.trim() || "";
+
+      if (!clientId || !name) {
+        setQuickStatus("Please select a client and add a project name.", "error");
+        return;
+      }
+
+      BXCore.setButtonLoading(submitBtn, true, "Saving...");
+      try {
+        await BXCore.apiPost({
+          action: "addProject",
+          projectId: "project_" + Date.now(),
+          clientId,
+          name,
+          description,
+          status: "in-progress",
+          driveLink,
+          updatedAt: new Date().toISOString(),
+        });
+        quickProjectForm.reset();
+        await refreshData();
+        setQuickStatus("Project added successfully.", "success");
+      } catch (err) {
+        console.error(err);
+        setQuickStatus("Couldn't add the project. Please try again.", "error");
+      } finally {
+        BXCore.setButtonLoading(submitBtn, false);
+      }
+    });
+  }
+
+  if (quickTaskForm) {
+    quickTaskForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      setQuickStatus("");
+      const submitBtn = quickTaskForm.querySelector("button[type='submit']");
+      const projectId = quickTaskProject?.value;
+      const title = quickTaskForm.querySelector("#quickTaskTitle")?.value.trim();
+      const description = quickTaskForm.querySelector("#quickTaskDesc")?.value.trim() || "";
+      const status = quickTaskForm.querySelector("#quickTaskStatus")?.value || "in-progress";
+      const progress = Number(
+        quickTaskForm.querySelector("#quickTaskProgress")?.value || 0
+      );
+      const dueDate = quickTaskForm.querySelector("#quickTaskDue")?.value || "";
+
+      if (!projectId || !title) {
+        setQuickStatus("Please select a project and add a task title.", "error");
+        return;
+      }
+
+      BXCore.setButtonLoading(submitBtn, true, "Saving...");
+      try {
+        await BXCore.apiPost({
+          action: "addTask",
+          taskId: "task_" + Date.now(),
+          projectId,
+          title,
+          description,
+          status,
+          progress: Number.isFinite(progress) ? progress : 0,
+          dueDate,
+          updatedAt: new Date().toISOString(),
+        });
+        quickTaskForm.reset();
+        await refreshData();
+        setQuickStatus("Task added successfully.", "success");
+      } catch (err) {
+        console.error(err);
+        setQuickStatus("Couldn't add the task. Please try again.", "error");
+      } finally {
+        BXCore.setButtonLoading(submitBtn, false);
+      }
+    });
+  }
+
+  if (quickClientForm) {
+    quickClientForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      setQuickStatus("");
+      const submitBtn = quickClientForm.querySelector("button[type='submit']");
+      const name = quickClientForm.querySelector("#quickClientName")?.value.trim();
+      const username = quickClientForm.querySelector("#quickClientUsername")?.value.trim();
+      const password = quickClientForm.querySelector("#quickClientPassword")?.value.trim();
+
+      if (!name || !username || !password) {
+        setQuickStatus("Please complete all client fields.", "error");
+        return;
+      }
+
+      BXCore.setButtonLoading(submitBtn, true, "Saving...");
+      try {
+        await BXCore.apiPost({
+          action: "addClient",
+          clientId: "client_" + Date.now(),
+          clientName: name,
+          username,
+          password,
+        });
+        quickClientForm.reset();
+        await refreshData();
+        setQuickStatus("Client added successfully.", "success");
+      } catch (err) {
+        console.error(err);
+        setQuickStatus("Couldn't add the client. Please try again.", "error");
+      } finally {
+        BXCore.setButtonLoading(submitBtn, false);
+      }
+    });
+  }
+
   try {
     BXCore.renderSkeleton(summaryEl, "summary", 4);
-    BXCore.renderSkeleton(activeProjectsEl, "card", 3);
     BXCore.renderSkeleton(activityEl, "timeline", 4);
 
     const data = await BXCore.apiGetAll();
     BXCore.updateSidebarStats(data);
     BXCore.renderClientHeader(data.clients || []);
 
-    const clients = data.clients || [];
-    const projects = data.projects || [];
-    const tasks = data.tasks || [];
+    clients = data.clients || [];
+    projects = data.projects || [];
+    tasks = data.tasks || [];
 
     if (sess.role === "admin") {
       if (titleEl) titleEl.textContent = "Dashboard";
@@ -134,65 +422,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         },
       ]);
 
-      if (activeProjectsEl) activeProjectsEl.innerHTML = "";
-      const projectList = isClientView
-        ? projects.filter((p) => (p.status || "in-progress") !== "completed")
-        : projects;
-      if (!projectList.length && activeProjectsEl) {
-        activeProjectsEl.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-icon"><i class="fas fa-layer-group"></i></div>
-            <div>
-              <h3>No projects yet</h3>
-              <p>Projects will appear here once they are created.</p>
-              <p class="empty-hint">Next step: add a project to begin tracking.</p>
-            </div>
-          </div>
-        `;
-      } else if (activeProjectsEl) {
-        projectList.forEach((p) => {
-          const pTasks = tasks.filter((t) => t.projectId === p.projectId);
-          const progress = BXCore.computeProjectProgress(pTasks);
-          const client = clients.find((c) => c.clientId === p.clientId);
-          const updatedLabel = BXCore.formatDateTime(p.updatedAt || p.createdAt) || "Not updated yet";
-
-          const progressLabel = progress === 0 ? "—" : `${progress}%`;
-          const progressHelper = progress === 0 ? "No tasks yet" : "";
-          const card = document.createElement("article");
-          card.className = "project-card";
-          card.innerHTML = `
-            <header>
-              <div>
-                <h3>${p.name || "Untitled project"}</h3>
-                <p class="project-desc">${p.description || ""}</p>
-                <p class="project-desc" style="font-size:0.8rem;margin-top:0.2rem;">
-                  Client: <strong>${client?.clientName || client?.username || "Unknown"}</strong>
-                </p>
-                <p class="project-meta-line">Updated: ${updatedLabel}</p>
-              </div>
-              <span class="badge ${p.status || "in-progress"}">
-                ${(p.status || "in-progress").replace("-", " ")}
-              </span>
-            </header>
-            <div class="project-meta">
-              <div style="flex:1">
-                <progress max="100" value="${progress}"></progress>
-              </div>
-              <div class="progress-stack">
-                <span class="progress-label">${progressLabel}</span>
-                ${progressHelper ? `<span class="progress-helper">${progressHelper}</span>` : ""}
-              </div>
-              ${
-                p.driveLink
-                  ? `<a class="ghost" href="${p.driveLink}" target="_blank" rel="noopener">Drive</a>`
-                  : ""
-              }
-            </div>
-          `;
-          activeProjectsEl.appendChild(card);
-        });
-      }
-
+      renderQuickActions(projects, tasks, clients);
       renderTimeline(tasks, projects, clients);
     } else {
       const client =
@@ -242,61 +472,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         },
       ]);
 
-      if (activeProjectsEl) activeProjectsEl.innerHTML = "";
-      const activeProjects = clientProjects.filter(
-        (p) => (p.status || "in-progress") !== "completed"
-      );
-      if (!activeProjects.length && activeProjectsEl) {
-        activeProjectsEl.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-icon"><i class="fas fa-layer-group"></i></div>
-            <div>
-              <h3>No active projects</h3>
-              <p>Once work begins, active projects will appear here.</p>
-              <p class="empty-hint">Next step: confirm next steps with your BX Media team.</p>
-            </div>
-          </div>
-        `;
-      } else if (activeProjectsEl) {
-        activeProjects.forEach((p) => {
-          const pTasks = clientTasks.filter((t) => t.projectId === p.projectId);
-          const progress = BXCore.computeProjectProgress(pTasks);
-          const updatedLabel = BXCore.formatDateTime(p.updatedAt || p.createdAt) || "Not updated yet";
-
-          const progressLabel = progress === 0 ? "—" : `${progress}%`;
-          const progressHelper = progress === 0 ? "No tasks yet" : "";
-          const card = document.createElement("article");
-          card.className = "project-card";
-          card.innerHTML = `
-            <header>
-              <div>
-                <h3>${p.name || "Untitled project"}</h3>
-                <p class="project-desc">${p.description || ""}</p>
-                <p class="project-meta-line">Updated: ${updatedLabel}</p>
-              </div>
-              <span class="badge ${p.status || "in-progress"}">
-                ${(p.status || "in-progress").replace("-", " ")}
-              </span>
-            </header>
-            <div class="project-meta">
-              <div style="flex:1">
-                <progress max="100" value="${progress}"></progress>
-              </div>
-              <div class="progress-stack">
-                <span class="progress-label">${progressLabel}</span>
-                ${progressHelper ? `<span class="progress-helper">${progressHelper}</span>` : ""}
-              </div>
-              ${
-                p.driveLink
-                  ? `<a class="ghost" href="${p.driveLink}" target="_blank" rel="noopener">Drive</a>`
-                  : ""
-              }
-            </div>
-          `;
-          activeProjectsEl.appendChild(card);
-        });
-      }
-
+      renderQuickActions(clientProjects, clientTasks, clients);
       renderTimeline(clientTasks, projects, clients);
     }
   } catch (err) {
@@ -306,3 +482,5 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 });
+
+

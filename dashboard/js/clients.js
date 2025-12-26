@@ -5,6 +5,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const statusEl = document.getElementById("addClientStatus");
   const actionStatusEl = document.getElementById("clientsActionStatus");
+  const detailModal = document.getElementById("clientDetailModal");
+  const detailClose = document.getElementById("clientModalClose");
+  const detailBody = document.getElementById("clientModalBody");
+  const detailTitle = document.getElementById("clientModalTitle");
+  const detailSubtitle = document.getElementById("clientModalSubtitle");
 
   const showActionStatus = (message, type = "success") => {
     if (!actionStatusEl) return;
@@ -33,7 +38,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    const clients = data.clients || [];
+    const clients = BXCore.validateClientsSchema(data.clients || []);
     const projects = data.projects || [];
     const tasks = data.tasks || [];
 
@@ -53,9 +58,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         <tr>
           <th>Client</th>
           <th>Username</th>
+          <th>Status</th>
           <th>Projects</th>
           <th>Tasks</th>
-          <th>Actions</th>
+          <th>View</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -73,11 +79,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       tr.innerHTML = `
         <td><strong>${c.clientName || "Unknown"}</strong></td>
         <td>${c.username || "Unknown"}</td>
+        <td><span class="badge ${c.status || "active"}">${(c.status || "active").replace("-", " ")}</span></td>
         <td>${clientProjects.length}</td>
         <td>${clientTasks.length}</td>
         <td>
-          <button class="btn-danger" data-delete="${c.clientId}" style="font-size:0.8rem;padding:0.2rem 0.7rem;">
-            <i class="fas fa-trash"></i> <span class="btn-text">Delete</span>
+          <button class="btn-secondary btn-compact" data-view="${c.clientId}" style="margin-right:0.35rem;">
+            <i class="fas fa-eye"></i> View
           </button>
         </td>
       `;
@@ -86,33 +93,108 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Delete button handler
     table.addEventListener("click", async (e) => {
-      const btn = e.target.closest("button[data-delete]");
-      if (!btn) return;
-
-      const clientId = btn.getAttribute("data-delete");
-      if (!confirm("Delete this client and all their projects/tasks?")) return;
-
-      BXCore.setButtonLoading(btn, true, "Deleting...");
-      try {
-        const resp = await BXCore.apiPost({ action: "deleteClient", clientId });
-        if (resp && resp.error) throw new Error(resp.error);
-
-        // Refresh counters & table
-        const fresh = await BXCore.apiGetAll(true);
-        BXCore.updateSidebarStats(fresh);
-
-        await renderClients();
-        showActionStatus("Client removed. The list is up to date.", "success");
-      } catch (err) {
-        console.error(err);
-        showActionStatus("Couldn't delete the client. Please try again.", "error");
-      } finally {
-        BXCore.setButtonLoading(btn, false);
+      const viewBtn = e.target.closest("button[data-view]");
+      if (viewBtn) {
+        const clientId = viewBtn.getAttribute("data-view");
+        const client = clients.find((c) => c.clientId === clientId);
+        const clientProjects = projects.filter((p) => p.clientId === clientId);
+        const clientTasks = tasks.filter((t) =>
+          clientProjects.some((p) => p.projectId === t.projectId)
+        );
+        renderClientDetail(client, clientProjects, clientTasks);
+        return;
       }
     });
 
     tableWrap.appendChild(table);
     wrapper.appendChild(tableWrap);
+  }
+
+  function renderClientDetail(client, clientProjects, clientTasks) {
+    if (!detailModal || !detailBody) return;
+    if (!client) return;
+
+    const completed = clientTasks.filter((t) => t.status === "completed").length;
+    const inProgress = clientTasks.filter((t) => t.status === "in-progress").length;
+    const blocked = clientTasks.filter((t) => t.status === "blocked").length;
+    const clientStatus = client.status || "active";
+
+    if (detailTitle) detailTitle.textContent = client.clientName || client.username || "Client";
+    if (detailSubtitle)
+      detailSubtitle.textContent = `${clientProjects.length} projects, ${clientTasks.length} tasks for this client.`;
+
+    detailBody.innerHTML = `
+      <div class="client-summary-grid">
+        <div class="client-summary-card">
+          <span>Projects</span>
+          <strong>${clientProjects.length}</strong>
+        </div>
+        <div class="client-summary-card">
+          <span>Tasks</span>
+          <strong>${clientTasks.length}</strong>
+        </div>
+        <div class="client-summary-card">
+          <span>In progress</span>
+          <strong>${inProgress}</strong>
+        </div>
+        <div class="client-summary-card">
+          <span>Completed</span>
+          <strong>${completed}</strong>
+        </div>
+        <div class="client-summary-card">
+          <span>Blocked</span>
+          <strong>${blocked}</strong>
+        </div>
+        <div class="client-summary-card">
+          <span>Status</span>
+          <strong>${clientStatus}</strong>
+        </div>
+      </div>
+      <div class="client-lists">
+        <div class="client-list">
+          <h3>Projects</h3>
+          ${
+            clientProjects.length
+              ? `<ul>${clientProjects
+                  .map(
+                    (p) =>
+                      `<li><span>${p.name || "Untitled"}</span><span class="badge ${p.status ||
+                        "not-started"}">${(p.status || "not-started").replace("-", " ")}</span></li>`
+                  )
+                  .join("")}</ul>`
+              : "<p class='empty'>No projects yet.</p>"
+          }
+        </div>
+        <div class="client-list">
+          <h3>Tasks</h3>
+          ${
+            clientTasks.length
+              ? `<ul>${clientTasks
+                  .slice(0, 10)
+                  .map(
+                    (t) =>
+                      `<li><span>${t.title || "Untitled task"}</span><span class="badge ${t.status ||
+                        "not-started"}">${(t.status || "not-started").replace("-", " ")}</span></li>`
+                  )
+                  .join("")}</ul>
+                  ${clientTasks.length > 10 ? `<p class="helper">${clientTasks.length - 10} more tasks not shown.</p>` : ""}
+                  `
+              : "<p class='empty'>No tasks yet.</p>"
+          }
+        </div>
+      </div>
+    `;
+
+    detailModal.classList.add("is-open");
+    detailModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+  }
+
+  function closeDetailModal() {
+    if (!detailModal) return;
+    detailModal.classList.remove("is-open");
+    detailModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
   }
 
   /* ---------------------------------------------------------
@@ -143,7 +225,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         clientId,
         clientName,
         username,
-        password
+        password,
+        status: "active",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       });
 
       if (resp && resp.error) throw new Error(resp.error);
@@ -175,4 +260,13 @@ document.addEventListener("DOMContentLoaded", async () => {
      INITIAL LOAD
   --------------------------------------------------------- */
   renderClients();
+
+  if (detailClose && detailModal) {
+    detailClose.addEventListener("click", closeDetailModal);
+    const backdrop = detailModal.querySelector(".modal-backdrop");
+    if (backdrop) backdrop.addEventListener("click", closeDetailModal);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && detailModal.classList.contains("is-open")) closeDetailModal();
+    });
+  }
 });

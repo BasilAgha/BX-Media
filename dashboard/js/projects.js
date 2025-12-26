@@ -12,6 +12,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const actionStatusEl = document.getElementById("projectsActionStatus");
   const toggleAddProjectBtn = document.getElementById("toggleAddProject");
   const addProjectPanel = document.getElementById("addProjectPanel");
+  const openAddProjectInline = document.getElementById("openAddProjectInline");
+  const cancelAddProjectBtn = document.getElementById("cancelAddProject");
 
   const showActionStatus = (message, type = "success") => {
     if (!actionStatusEl) return;
@@ -19,6 +21,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     actionStatusEl.classList.add(`alert-${type}`);
     actionStatusEl.textContent = message;
     actionStatusEl.style.display = "block";
+    setTimeout(() => {
+      actionStatusEl.style.display = "none";
+    }, 2200);
   };
 
   BXCore.renderSkeleton(projectsList, "card", 3);
@@ -95,7 +100,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             <span class="badge ${p.status || "in-progress"}">
               ${(p.status || "in-progress").replace("-", " ")}
             </span>
-            <button class="btn-secondary btn-compact project-edit-toggle" type="button">Edit</button>
+            <div class="project-actions">
+              <button class="btn-secondary btn-compact project-edit-toggle" type="button">Edit</button>
+              <button class="btn-danger btn-compact project-delete" type="button"><i class="fas fa-trash"></i></button>
+            </div>
           </div>
         </header>
         <div class="project-meta">
@@ -138,7 +146,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             </div>
           </div>
           <div class="project-edit-actions">
-            <button class="btn-secondary admin-project-save" type="button">Save changes</button>
+            <div style="flex:1"></div>
+            <div class="project-actions">
+              <button class="btn-danger admin-project-delete" type="button">Delete</button>
+              <button class="btn-secondary admin-project-save" type="button">Save changes</button>
+            </div>
           </div>
         </div>
       `;
@@ -160,7 +172,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         const saveBtn = e.target.closest(".admin-project-save");
-        if (!saveBtn) return;
+        const deleteBtn = e.target.closest(".admin-project-delete") || e.target.closest(".project-delete");
+        if (!saveBtn && !deleteBtn) return;
         const card = e.target.closest(".project-card");
         if (!card) return;
         const projectId = card.dataset.projectId;
@@ -168,6 +181,31 @@ document.addEventListener("DOMContentLoaded", async () => {
         const descInput = card.querySelector(".admin-project-desc");
         const statusSelect = card.querySelector(".admin-project-status");
         const driveInput = card.querySelector(".admin-project-drive");
+
+        if (deleteBtn) {
+          const confirmDelete = window.confirm("Delete this project? Related tasks will remain but may become orphaned.");
+          if (!confirmDelete) return;
+          BXCore.setButtonLoading(deleteBtn, true, "Deleting...");
+          try {
+            await BXCore.apiPost({
+              action: "deleteProject",
+              projectId,
+            });
+            data = await BXCore.apiGetAll(true);
+            BXCore.updateSidebarStats(data);
+            clients = data.clients || [];
+            projects = data.projects || [];
+            tasks = data.tasks || [];
+            renderProjects();
+            showActionStatus("Project deleted.", "success");
+          } catch (err) {
+            console.error(err);
+            showActionStatus("Couldn't delete the project. Please try again.", "error");
+          } finally {
+            BXCore.setButtonLoading(deleteBtn, false);
+          }
+          return;
+        }
 
         if (!nameInput.value.trim()) {
           showActionStatus("Project name is required.", "error");
@@ -210,6 +248,23 @@ document.addEventListener("DOMContentLoaded", async () => {
       const isCollapsed = addProjectPanel.classList.toggle("is-collapsed");
       toggleAddProjectBtn.textContent = isCollapsed ? "Show" : "Hide";
       addProjectPanel.setAttribute("aria-hidden", isCollapsed ? "true" : "false");
+    });
+  }
+
+  if (openAddProjectInline && addProjectPanel) {
+    openAddProjectInline.addEventListener("click", () => {
+      addProjectPanel.classList.remove("is-collapsed");
+      addProjectPanel.setAttribute("aria-hidden", "false");
+      toggleAddProjectBtn.textContent = "Hide";
+      addProjectPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  if (cancelAddProjectBtn && addProjectPanel) {
+    cancelAddProjectBtn.addEventListener("click", () => {
+      addProjectPanel.classList.add("is-collapsed");
+      addProjectPanel.setAttribute("aria-hidden", "true");
+      toggleAddProjectBtn.textContent = "Show";
     });
   }
 

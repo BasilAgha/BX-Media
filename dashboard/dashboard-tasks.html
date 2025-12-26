@@ -49,6 +49,11 @@
               <h1>Tasks</h1>
               <p class="panel-subtitle">Track delivery progress and keep priorities aligned.</p>
             </div>
+            <div class="panel-actions">
+              <button class="btn-primary" id="openAddTaskInline" type="button">
+                <i class="fas fa-plus"></i> New task
+              </button>
+            </div>
           </header>
           <div id="tasksActionStatus" class="alert alert-success" style="display:none"></div>
 
@@ -76,54 +81,70 @@
             </div>
           </section>
 
-          <section class="subpanel section-block">
-            <h2><i class="fas fa-list-check"></i> Add task</h2>
-            <form id="addTaskForm" class="form-grid">
-              <div class="form-row">
-                <label>Project</label>
-                <select id="addTaskProjectSelect" name="projectId" required></select>
+          <div class="layout-2col section-block">
+            <section class="subpanel column">
+              <div class="subpanel-header">
+                <h2><i class="fas fa-list-check"></i> Add task</h2>
+                <button class="btn-secondary btn-compact" id="toggleAddTask" type="button">Hide</button>
               </div>
-              <div class="form-row">
-                <label>Title</label>
-                <input name="title" required />
+              <div id="addTaskPanel" class="collapsible" aria-hidden="false">
+                <form id="addTaskForm" class="form-grid">
+                  <div class="form-row">
+                    <label>Project</label>
+                    <select id="addTaskProjectSelect" name="projectId" required></select>
+                  </div>
+                  <div class="form-row">
+                    <label>Title</label>
+                    <input name="title" placeholder="Design homepage hero" required />
+                  </div>
+                  <div class="form-row">
+                    <label>Description</label>
+                    <textarea name="description" rows="3" placeholder="Context, owners, links"></textarea>
+                  </div>
+                  <div class="form-row">
+                    <label>Status</label>
+                    <select name="status">
+                      <option value="not-started">Not started</option>
+                      <option value="in-progress" selected>In progress</option>
+                      <option value="completed">Completed</option>
+                      <option value="blocked">Blocked</option>
+                    </select>
+                  </div>
+                  <div class="form-row">
+                    <label>Progress (%)</label>
+                    <input name="progress" type="number" min="0" max="100" value="10" />
+                  </div>
+                  <div class="form-row">
+                    <label>Due date</label>
+                    <input name="dueDate" type="date" />
+                  </div>
+                  <div class="modal-actions">
+                    <button class="ghost" type="button" id="cancelAddTask">Cancel</button>
+                    <button class="btn-primary" type="submit" data-default-label="Add task">
+                      <span class="btn-label"><i class="fas fa-plus-circle"></i> <span class="btn-text">Add task</span></span>
+                      <span class="btn-spinner" aria-hidden="true">
+                        <i class="fas fa-circle-notch fa-spin"></i>
+                      </span>
+                    </button>
+                  </div>
+                </form>
+                <div id="addTaskStatus" class="alert alert-success" style="display:none">
+                  Task added successfully.
+                </div>
               </div>
-              <div class="form-row">
-                <label>Description</label>
-                <textarea name="description" rows="2"></textarea>
-              </div>
-              <div class="form-row">
-                <label>Status</label>
-                <select name="status">
-                  <option value="not-started">Not started</option>
-                  <option value="in-progress" selected>In progress</option>
-                  <option value="completed">Completed</option>
-                  <option value="blocked">Blocked</option>
-                </select>
-              </div>
-              <div class="form-row">
-                <label>Progress (%)</label>
-                <input name="progress" type="number" min="0" max="100" value="10" />
-              </div>
-              <div class="form-row">
-                <label>Due date</label>
-                <input name="dueDate" type="date" />
-              </div>
-              <button class="btn-primary" type="submit" data-default-label="Add task">
-                <span class="btn-label"><i class="fas fa-plus-circle"></i> <span class="btn-text">Add task</span></span>
-                <span class="btn-spinner" aria-hidden="true">
-                  <i class="fas fa-circle-notch fa-spin"></i>
-                </span>
-              </button>
-            </form>
-            <div id="addTaskStatus" class="alert alert-success" style="display:none">
-              Task added successfully.
-            </div>
-          </section>
 
-          <section class="subpanel section-block">
-            <h2><i class="fas fa-table"></i> Tasks table</h2>
-            <div id="tasksTableWrapper"></div>
-          </section>
+            </section>
+
+            <section class="subpanel column">
+              <div class="subpanel-header">
+                <div>
+                  <h2><i class="fas fa-table"></i> Tasks</h2>
+                  <p class="helper">Edit inline, delete, and keep delivery in sync.</p>
+                </div>
+              </div>
+              <div id="tasksTableWrapper"></div>
+            </section>
+          </div>
         </section>
       </div>
     </main>

@@ -2,9 +2,10 @@
 // Shared helpers: API, auth, utilities, sidebar wiring
 
 (function() {
-  const API_BASE = "https://script.google.com/macros/s/AKfycbzNjg0iGqHY0vIIgjIId9eJElTC-wK42FKQYS7DBVAzJvQ-4YkRh_o1RPFtJhLpfi0OMg/exec";
+  const API_BASE = "https://script.google.com/macros/s/AKfycbwavzXTfxTcVduAbnzj9wJq9CF2lbbLlkvD7MtQb0-698c9-Gm3NoLmNDyBYCTfkQ3Omg/exec";
   const SESSION_KEY = "bxm_dashboard_session_v1";
   let cachedData = null;
+  let cachedRaw = null;
   let firstLoadPending = true;
 
   function ensurePageLoader() {
@@ -91,15 +92,56 @@
     return obj;
   }
 
-  async function apiGetAll(force = false) {
-    if (!force && cachedData) return cachedData;
+  async function apiGetAll(force = false, includeInactiveClients = false) {
+    if (!force && cachedData && !includeInactiveClients) return cachedData;
+    if (!force && cachedRaw && includeInactiveClients) return cachedRaw;
     if (firstLoadPending) showPageLoader("Loading dashboard...");
     try {
       const res = await fetch(API_BASE + "?action=getAll");
       if (!res.ok) throw new Error("Failed to fetch data");
       const json = await res.json();
-      cachedData = unwrapBody(json);
-      return cachedData;
+      const body = unwrapBody(json) || {};
+
+      const normalizedClients = validateClientsSchema(body.clients || body.Clients || []);
+      const baseData = {
+        ok: body.ok !== false,
+        accounts: body.accounts || body.Accounts || [],
+        clients: normalizedClients,
+        projects: body.projects || body.Projects || [],
+        tasks: body.tasks || body.Tasks || [],
+        deliverables: body.deliverables || body.Deliverables || [],
+      };
+
+      const sess = getSession();
+      let filtered = { ...baseData };
+      if (sess && sess.role === "client") {
+        const clientId = sess.clientId;
+        const clientFiltered = (baseData.clients || []).filter(
+          (c) => c.clientId === clientId && c.status === "active"
+        );
+        const projectsFiltered = (baseData.projects || []).filter((p) => p.clientId === clientId);
+        const projectIds = new Set(projectsFiltered.map((p) => p.projectId));
+        const tasksFiltered = (baseData.tasks || []).filter((t) => projectIds.has(t.projectId));
+        const deliverablesFiltered = (baseData.deliverables || []).filter(
+          (d) =>
+            d.clientId === clientId &&
+            (d.visibleToClient === true || String(d.visibleToClient) === "true") &&
+            String(d.status || "").toLowerCase() !== "archived"
+        );
+        filtered = {
+          ok: baseData.ok,
+          accounts: [],
+          clients: clientFiltered,
+          projects: projectsFiltered,
+          tasks: tasksFiltered,
+          deliverables: deliverablesFiltered,
+        };
+      }
+
+      cachedRaw = baseData;
+      cachedData = filtered;
+
+      return includeInactiveClients ? cachedRaw : cachedData;
     } finally {
       if (firstLoadPending) {
         firstLoadPending = false;
@@ -109,6 +151,26 @@
   }
 
   async function apiPost(payload) {
+    if (!payload || typeof payload !== "object") {
+      return { ok: false, error: "Invalid payload" };
+    }
+
+    // Enforce lifecycle rules
+    if (payload.action === "deleteClient") {
+      return { ok: false, error: "Client deletion is disabled. Use status lifecycle instead.", status: "archived" };
+    }
+
+    if (payload.action === "addClient") {
+      payload.status = "active";
+      payload.createdAt = payload.createdAt || new Date().toISOString();
+      payload.updatedAt = payload.updatedAt || new Date().toISOString();
+    }
+
+    if (payload.action === "login") {
+      cachedData = null;
+      cachedRaw = null;
+    }
+
     const res = await fetch(API_BASE, {
       method: "POST",
       body: JSON.stringify(payload),
@@ -120,6 +182,7 @@
 
     // Important: force cache refresh
     cachedData = null;
+    cachedRaw = null;
 
     return unwrapBody(json);
   }
@@ -217,6 +280,24 @@
     localStorage.removeItem(SESSION_KEY);
   }
 
+  const ALLOWED_CLIENT_STATUSES = ["active", "inactive", "archived", "blocked"];
+
+  function validateClientsSchema(clients = []) {
+    return (clients || []).map((c) => {
+      const next = { ...c };
+      const required = ["clientId", "clientName", "username", "password", "status", "createdAt", "updatedAt"];
+      required.forEach((key) => {
+        if (next[key] === undefined || next[key] === null) {
+          next[key] = key === "status" ? "active" : "";
+        }
+      });
+      if (!ALLOWED_CLIENT_STATUSES.includes(next.status)) {
+        next.status = "active";
+      }
+      return next;
+    });
+  }
+
   function requireAuth(options = {}, redirectIfMissing = true) {
     const sess = getSession();
     if (!sess && redirectIfMissing) {
@@ -266,7 +347,7 @@
       const el = document.getElementById(id);
       if (!el) return;
       const val = Number(v);
-      el.textContent = Number.isFinite(val) && val === 0 ? "—" : v;
+      el.textContent = Number.isFinite(val) && val === 0 ? "--" : v;
     };
 
     setText("statTotalProjects", projects.length);
@@ -380,6 +461,9 @@
     hidePageLoader,
     setButtonLoading,
     renderSkeleton,
+    validateClientsSchema,
+    ALLOWED_CLIENT_STATUSES,
     API_BASE,
   };
 })();
+

@@ -9,12 +9,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   const addForm = document.getElementById("addDeliverableForm");
   const addClientSelect = document.getElementById("addDeliverableClientSelect");
   const addProjectSelect = document.getElementById("addDeliverableProjectSelect");
-  const addCoverFileInput = document.getElementById("addDeliverableCoverFile");
   const addCoverUrlInput = document.getElementById("addDeliverableCoverUrl");
   const addStatusEl = document.getElementById("addDeliverableStatus");
+  const addVisibleInput = document.getElementById("addDeliverableVisible");
+  const addDeliveryLinkInput = document.getElementById("addDeliverableLink");
   const actionStatusEl = document.getElementById("deliverablesActionStatus");
   const toggleAddDeliverableBtn = document.getElementById("toggleAddDeliverable");
   const addDeliverablePanel = document.getElementById("addDeliverablePanel");
+  const openAddDeliverableInline = document.getElementById("openAddDeliverableInline");
+  const cancelAddDeliverableBtn = document.getElementById("cancelAddDeliverable");
 
   const modal = document.getElementById("deliverableModal");
   const modalTitle = document.getElementById("deliverableModalTitle");
@@ -32,11 +35,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const editName = document.getElementById("editDeliverableName");
   const editStatus = document.getElementById("editDeliverableStatus");
   const editCover = document.getElementById("editDeliverableCover");
-  const editCoverFile = document.getElementById("editDeliverableCoverFile");
   const editDescription = document.getElementById("editDeliverableDescription");
-  const editDriveLink = document.getElementById("editDeliverableDriveLink");
-  const editPreviewLink = document.getElementById("editDeliverablePreviewLink");
-  const editDownloadLink = document.getElementById("editDeliverableDownloadLink");
+  const editDeliveryLink = document.getElementById("editDeliverableLink");
+  const editVisibleInput = document.getElementById("editDeliverableVisible");
   const editStatusEl = document.getElementById("deliverableEditStatus");
 
   const showActionStatus = (message, type = "success") => {
@@ -45,7 +46,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     actionStatusEl.classList.add(`alert-${type}`);
     actionStatusEl.textContent = message;
     actionStatusEl.style.display = "block";
+    setTimeout(() => {
+      actionStatusEl.style.display = "none";
+    }, 2200);
   };
+
+  const ALLOWED_DELIVERABLE_STATUSES = ["in-progress", "ready", "delivered", "approved", "archived"];
 
   const showEditStatus = (message, type = "success") => {
     if (!editStatusEl) return;
@@ -55,22 +61,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     editStatusEl.style.display = "block";
   };
 
-  const readFileAsDataUrl = (file) => new Promise((resolve, reject) => {
-    if (!file) {
-      resolve("");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result || "");
-    reader.onerror = () => reject(new Error("Failed to read file"));
-    reader.readAsDataURL(file);
-  });
-
-  const resolveCoverImage = async (fileInput, urlInput, fallbackValue = "") => {
-    const file = fileInput?.files?.[0];
-    if (file) {
-      return await readFileAsDataUrl(file);
-    }
+  const resolveCoverImage = async (urlInput, fallbackValue = "") => {
     const url = urlInput?.value?.trim() || "";
     return url || fallbackValue || "";
   };
@@ -182,12 +173,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     return project.clientId === clientId;
   };
 
+  const normalizeStatus = (status) => {
+    const val = String(status || "").trim().toLowerCase();
+    return ALLOWED_DELIVERABLE_STATUSES.includes(val) ? val : "in-progress";
+  };
+
   const openModal = (deliverable) => {
     if (!deliverable) return;
     currentDeliverable = deliverable;
     const project = getProject(deliverable.projectId);
     const clientId = deliverable.clientId || project?.clientId || "";
-    const statusValue = deliverable.status || "in-progress";
+    const statusValue = normalizeStatus(deliverable.status);
     modalTitle.textContent = deliverable.name || "Deliverable";
     modalProject.textContent = `Project: ${project?.name || "Unknown project"}`;
     modalClient.textContent = `Client: ${getClientName(clientId)}`;
@@ -208,27 +204,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     modalLinks.innerHTML = "";
-    const linkItems = [
-      { label: "Drive", url: deliverable.driveLink, icon: "fa-google-drive" },
-      { label: "Preview", url: deliverable.previewLink, icon: "fa-eye" },
-      { label: "Download", url: deliverable.downloadLink, icon: "fa-download" },
-    ];
-    linkItems.forEach((item) => {
-      if (item.url) {
-        const link = document.createElement("a");
-        link.className = "modal-link";
-        link.href = item.url;
-        link.target = "_blank";
-        link.rel = "noopener";
-        link.innerHTML = `<i class="fas ${item.icon}"></i> ${item.label}`;
-        modalLinks.appendChild(link);
-      } else {
-        const empty = document.createElement("div");
-        empty.className = "modal-link is-empty";
-        empty.innerHTML = `<i class="fas ${item.icon}"></i> ${item.label} not available`;
-        modalLinks.appendChild(empty);
-      }
-    });
+    const deliveryUrl = deliverable.deliveryLink || deliverable.downloadLink || deliverable.previewLink || deliverable.driveLink;
+    const linkEl = document.createElement(deliveryUrl ? "a" : "div");
+    linkEl.className = `modal-link${deliveryUrl ? "" : " is-empty"}`;
+    if (deliveryUrl) {
+      linkEl.href = deliveryUrl;
+      linkEl.target = "_blank";
+      linkEl.rel = "noopener";
+      linkEl.innerHTML = `<i class="fas fa-link"></i> Open deliverable`;
+    } else {
+      linkEl.innerHTML = `<i class="fas fa-link"></i> Deliverable link not available`;
+    }
+    modalLinks.appendChild(linkEl);
 
     if (modalAdmin) {
       modalAdmin.style.display = "block";
@@ -238,12 +225,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       editName.value = deliverable.name || "";
       editStatus.value = statusValue;
       editCover.value = deliverable.coverImage || "";
-      if (editCoverFile) editCoverFile.value = "";
       editDescription.value = deliverable.description || "";
-      editDriveLink.value = deliverable.driveLink || "";
-      editPreviewLink.value = deliverable.previewLink || "";
-      editDownloadLink.value = deliverable.downloadLink || "";
-
+      editDeliveryLink.value =
+        deliverable.deliveryLink || deliverable.downloadLink || deliverable.previewLink || deliverable.driveLink || "";
+      if (editVisibleInput) {
+        editVisibleInput.checked = deliverable.visibleToClient === true || String(deliverable.visibleToClient) === "true";
+      }
       editClientSelect.value = clientId || "";
       populateProjectSelect(editProjectSelect, clientId, null, deliverable.projectId);
     }
@@ -281,6 +268,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
+  if (openAddDeliverableInline && addDeliverablePanel) {
+    openAddDeliverableInline.addEventListener("click", () => {
+      addDeliverablePanel.classList.remove("is-collapsed");
+      addDeliverablePanel.setAttribute("aria-hidden", "false");
+      toggleAddDeliverableBtn.textContent = "Hide";
+      addDeliverablePanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  if (cancelAddDeliverableBtn && addDeliverablePanel) {
+    cancelAddDeliverableBtn.addEventListener("click", () => {
+      addDeliverablePanel.classList.add("is-collapsed");
+      addDeliverablePanel.setAttribute("aria-hidden", "true");
+      toggleAddDeliverableBtn.textContent = "Show";
+    });
+  }
+
   const renderDeliverables = () => {
     deliverablesGrid.innerHTML = "";
 
@@ -309,8 +313,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           <div class="empty-icon"><i class="fas fa-box-open"></i></div>
           <div>
             <h3>No deliverables yet</h3>
-            <p>Start by adding a deliverable to a project.</p>
-            <p class="empty-hint">Next step: use the form above to add the first asset.</p>
+            <p>Use the filters to refine your view or add the first asset.</p>
           </div>
         </div>
       `;
@@ -341,7 +344,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             </div>
             <div class="deliverable-actions">
               <button class="btn-secondary" type="button" data-action="edit">Edit</button>
-              <button class="btn-danger" type="button" data-action="delete">Delete</button>
+              <button class="btn-danger" type="button" data-action="delete">Archive</button>
             </div>
           </div>
         `;
@@ -364,10 +367,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
       if (action === "delete") {
-        if (!confirm("Delete this deliverable?")) return;
-        BXCore.setButtonLoading(actionBtn, true, "Deleting...");
+        if (!confirm("Archive this deliverable? It will stay in records.")) return;
+        BXCore.setButtonLoading(actionBtn, true, "Archiving...");
         try {
-          await BXCore.apiPost({ action: "deleteDeliverable", deliverableId });
+          await BXCore.apiPost({
+            action: "updateDeliverable",
+            deliverableId,
+            status: "archived",
+            updatedAt: new Date().toISOString(),
+          });
           data = await BXCore.apiGetAll(true);
           BXCore.updateSidebarStats(data);
           clients = data.clients || [];
@@ -431,24 +439,27 @@ document.addEventListener("DOMContentLoaded", async () => {
     BXCore.setButtonLoading(submitBtn, true, "Saving...");
     const deliverableId = "deliverable_" + Date.now();
     try {
-      const coverImage = await resolveCoverImage(addCoverFileInput, addCoverUrlInput);
+      const coverImage = await resolveCoverImage(addCoverUrlInput);
       await BXCore.apiPost({
         action: "addDeliverable",
         deliverableId,
         clientId,
+        clientName: getClientName(clientId),
         projectId,
+        projectName: getProjectName(projectId),
         name,
-        status: fd.get("status"),
+        status: normalizeStatus(fd.get("status") || "in-progress"),
         coverImage,
         description: fd.get("description"),
-        driveLink: fd.get("driveLink"),
-        previewLink: fd.get("previewLink"),
-        downloadLink: fd.get("downloadLink"),
+        deliveryLink: fd.get("deliveryLink"),
+        downloadLink: fd.get("deliveryLink"),
+        visibleToClient: addVisibleInput?.checked ? true : false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
       addForm.reset();
-      if (addCoverFileInput) addCoverFileInput.value = "";
+      if (addCoverUrlInput) addCoverUrlInput.value = "";
+      if (addVisibleInput) addVisibleInput.checked = false;
       if (addStatusEl) {
         addStatusEl.textContent = "Deliverable added successfully.";
         addStatusEl.style.display = "block";
@@ -492,19 +503,21 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     BXCore.setButtonLoading(submitBtn, true, "Saving...");
     try {
-      const coverImage = await resolveCoverImage(editCoverFile, editCover, editCover.value);
+      const coverImage = await resolveCoverImage(editCover, editCover.value);
       await BXCore.apiPost({
         action: "updateDeliverable",
         deliverableId: currentDeliverable.deliverableId,
         clientId,
         projectId,
+        clientName: getClientName(clientId),
+        projectName: getProjectName(projectId),
         name,
-        status: editStatus.value,
+        status: normalizeStatus(editStatus.value),
         coverImage,
         description: editDescription.value,
-        driveLink: editDriveLink.value,
-        previewLink: editPreviewLink.value,
-        downloadLink: editDownloadLink.value,
+        deliveryLink: editDeliveryLink.value,
+        downloadLink: editDeliveryLink.value,
+        visibleToClient: editVisibleInput?.checked ? true : false,
         updatedAt: new Date().toISOString(),
       });
       data = await BXCore.apiGetAll(true);

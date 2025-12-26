@@ -44,37 +44,30 @@ document.addEventListener("DOMContentLoaded", () => {
     setLoading(true, "Signing in...");
 
     try {
-      const data = await BXCore.apiGetAll(true);
-      const accounts = data.accounts || [];
-      const clients  = data.clients || [];
+      const resp = await BXCore.apiPost({
+        action: "login",
+        username,
+        password,
+      });
 
-      // ------------------------
-      // 1. ADMIN LOGIN
-      // ------------------------
-      const admin = accounts.find(a =>
-        String(a.username || "").trim().toLowerCase() === username
-      );
-
-      if (admin) {
-        const ok = String(admin.password || "") === password;
-
-        if (!ok) {
-          if (errorBox) {
-            errorBox.textContent = "Invalid username or password.";
-            errorBox.style.display = "block";
-          }
-          setLoading(false);
-          setStatus("", "info");
-          return;
+      if (!resp || resp.ok === false) {
+        const message = resp?.error || "Invalid credentials";
+        if (errorBox) {
+          errorBox.textContent = message;
+          errorBox.style.display = "block";
         }
+        setLoading(false);
+        setStatus("", "info");
+        return;
+      }
 
+      if (resp.role === "admin" && resp.admin) {
         BXCore.saveSession({
-          username: admin.username,
+          username: resp.admin.username,
           role: "admin",
           clientId: null,
-          clientName: null
+          clientName: resp.admin.name || resp.admin.username,
         });
-
         setStatus("Signed in. Redirecting to your dashboard...", "success");
         BXCore.showPageLoader("Redirecting...");
         setTimeout(() => {
@@ -83,50 +76,27 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // ------------------------
-      // 2. CLIENT LOGIN
-      // ------------------------
-      const client = clients.find(c =>
-        String(c.username || "").trim().toLowerCase() === username
-      );
-
-      if (!client) {
-        // No client with this username
-        if (errorBox) {
-          errorBox.textContent = "Invalid username or password.";
-          errorBox.style.display = "block";
-        }
-        setLoading(false);
-        setStatus("", "info");
+      if (resp.role === "client" && resp.client) {
+        BXCore.saveSession({
+          username: username,
+          role: "client",
+          clientId: resp.client.clientId,
+          clientName: resp.client.clientName,
+        });
+        setStatus("Signed in. Redirecting to your dashboard...", "success");
+        BXCore.showPageLoader("Redirecting...");
+        setTimeout(() => {
+          window.location.href = "client-dashboard-overview.html";
+        }, 350);
         return;
       }
 
-      const ok = String(client.password || "") === password;
-
-      if (!ok) {
-        if (errorBox) {
-          errorBox.textContent = "Invalid username or password.";
-          errorBox.style.display = "block";
-        }
-        setLoading(false);
-        setStatus("", "info");
-        return;
+      if (errorBox) {
+        errorBox.textContent = "Invalid credentials";
+        errorBox.style.display = "block";
       }
-
-      // Save session for CLIENT
-      BXCore.saveSession({
-        username: client.username,
-        role: "client",
-        clientId: client.clientId,
-        clientName: client.clientName
-      });
-
-      setStatus("Signed in. Redirecting to your dashboard...", "success");
-      BXCore.showPageLoader("Redirecting...");
-      setTimeout(() => {
-        window.location.href = "client-dashboard-overview.html";
-      }, 350);
-
+      setLoading(false);
+      setStatus("", "info");
     } catch (err) {
       console.error(err);
       if (errorBox) {

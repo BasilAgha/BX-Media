@@ -98,6 +98,20 @@
     </main>
   </div>
 
+  <div id="clientDetailModal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-panel client-modal" role="dialog" aria-modal="true" aria-labelledby="clientModalTitle">
+      <div class="modal-header">
+        <div>
+          <h2 id="clientModalTitle">Client</h2>
+          <p class="modal-helper" id="clientModalSubtitle">Overview of projects and tasks.</p>
+        </div>
+        <button class="btn-secondary" type="button" id="clientModalClose"><i class="fas fa-xmark"></i> Close</button>
+      </div>
+      <div class="modal-body" id="clientModalBody"></div>
+    </div>
+  </div>
+
   <script src="js/dashboard-core.js"></script>
   <script src="js/clients.js"></script>
 </body>

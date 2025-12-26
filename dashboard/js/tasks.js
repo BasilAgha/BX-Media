@@ -13,6 +13,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   const addTaskStatus = document.getElementById("addTaskStatus");
   const tasksTableWrapper = document.getElementById("tasksTableWrapper");
   const actionStatusEl = document.getElementById("tasksActionStatus");
+  const toggleAddTaskBtn = document.getElementById("toggleAddTask");
+  const addTaskPanel = document.getElementById("addTaskPanel");
+  const openAddTaskInline = document.getElementById("openAddTaskInline");
+  const cancelAddTaskBtn = document.getElementById("cancelAddTask");
 
   const showActionStatus = (message, type = "success") => {
     if (!actionStatusEl) return;
@@ -20,6 +24,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     actionStatusEl.classList.add(`alert-${type}`);
     actionStatusEl.textContent = message;
     actionStatusEl.style.display = "block";
+    setTimeout(() => {
+      actionStatusEl.style.display = "none";
+    }, 2200);
   };
 
   BXCore.renderSkeleton(tasksTableWrapper, "table", 1);
@@ -49,6 +56,31 @@ document.addEventListener("DOMContentLoaded", async () => {
       clients.find((c) => c.clientId === sess.clientId) ||
       clients.find((c) => c.username === sess.username);
     currentClientId = client?.clientId || null;
+  }
+
+  if (toggleAddTaskBtn && addTaskPanel) {
+    toggleAddTaskBtn.addEventListener("click", () => {
+      const isCollapsed = addTaskPanel.classList.toggle("is-collapsed");
+      toggleAddTaskBtn.textContent = isCollapsed ? "Show" : "Hide";
+      addTaskPanel.setAttribute("aria-hidden", isCollapsed ? "true" : "false");
+    });
+  }
+
+  if (openAddTaskInline && addTaskPanel) {
+    openAddTaskInline.addEventListener("click", () => {
+      addTaskPanel.classList.remove("is-collapsed");
+      addTaskPanel.setAttribute("aria-hidden", "false");
+      if (toggleAddTaskBtn) toggleAddTaskBtn.textContent = "Hide";
+      addTaskPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  if (cancelAddTaskBtn && addTaskPanel) {
+    cancelAddTaskBtn.addEventListener("click", () => {
+      addTaskPanel.classList.add("is-collapsed");
+      addTaskPanel.setAttribute("aria-hidden", "true");
+      if (toggleAddTaskBtn) toggleAddTaskBtn.textContent = "Show";
+    });
   }
 
   function getVisibleProjects() {
@@ -106,13 +138,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (!filtered.length) {
-      tasksTableWrapper.innerHTML = '<div class="empty">No tasks match the filters.</div>';
+      tasksTableWrapper.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon"><i class="fas fa-list-check"></i></div>
+          <div>
+            <h3>No tasks match the filters</h3>
+            <p>Adjust the filters to find what you need.</p>
+          </div>
+        </div>
+      `;
       return;
     }
 
     const wrap = document.createElement("div");
     wrap.className = "table-wrapper";
     const table = document.createElement("table");
+    table.className = "tasks-table";
     table.innerHTML = `
       <thead>
         <tr>
