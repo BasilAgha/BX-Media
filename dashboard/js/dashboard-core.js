@@ -135,12 +135,26 @@
       if (!row || typeof row !== "object") return row;
       const next = { ...row };
       if (next.client_id !== undefined && next.clientId === undefined) next.clientId = next.client_id;
+      if (next.client_name !== undefined && next.clientName === undefined) next.clientName = next.client_name;
+      if (next.user_name !== undefined && next.username === undefined) next.username = next.user_name;
+      if (next.created_at !== undefined && next.createdAt === undefined) next.createdAt = next.created_at;
+      if (next.updated_at !== undefined && next.updatedAt === undefined) next.updatedAt = next.updated_at;
       if (next.project_id !== undefined && next.projectId === undefined) next.projectId = next.project_id;
       if (next.task_id !== undefined && next.taskId === undefined) next.taskId = next.task_id;
       if (next.deliverable_id !== undefined && next.deliverableId === undefined) next.deliverableId = next.deliverable_id;
       if (next.comment_id !== undefined && next.commentId === undefined) next.commentId = next.comment_id;
       return next;
     });
+  }
+
+  function getClientColumnMap(sample = {}) {
+    return {
+      clientId: sample.client_id !== undefined ? "client_id" : "clientId",
+      clientName: sample.client_name !== undefined ? "client_name" : "clientName",
+      username: sample.user_name !== undefined ? "user_name" : "username",
+      createdAt: sample.created_at !== undefined ? "created_at" : "createdAt",
+      updatedAt: sample.updated_at !== undefined ? "updated_at" : "updatedAt",
+    };
   }
 
   async function apiGetAll(force = false, includeInactiveClients = false) {
@@ -289,29 +303,43 @@
       return out;
     };
 
+    const pickDefined = (source) => {
+      const out = {};
+      Object.keys(source || {}).forEach((key) => {
+        if (source[key] !== undefined) out[key] = source[key];
+      });
+      return out;
+    };
+
     let response;
     if (action === "addClient") {
-      const data = pickFields(payload, [
-        "clientId",
-        "clientName",
-        "username",
-        "password",
-        "status",
-        "createdAt",
-        "updatedAt",
-      ]);
+      const clientSample = (cachedData?.clients || []).find((row) => row) || {};
+      const columnMap = getClientColumnMap(clientSample);
+      const data = pickDefined({
+        [columnMap.clientId]: payload.clientId,
+        [columnMap.clientName]: payload.clientName,
+        [columnMap.username]: payload.username,
+        password: payload.password,
+        status: payload.status,
+        [columnMap.createdAt]: payload.createdAt,
+        [columnMap.updatedAt]: payload.updatedAt,
+      });
       response = await supabase.from("clients").insert([data]);
     } else if (action === "updateClient") {
-      const data = pickFields(payload, [
-        "clientName",
-        "username",
-        "password",
-        "status",
-        "updatedAt",
-      ]);
-      response = await supabase.from("clients").update(data).eq("clientId", payload.clientId);
+      const clientSample = (cachedData?.clients || []).find((row) => row) || {};
+      const columnMap = getClientColumnMap(clientSample);
+      const data = pickDefined({
+        [columnMap.clientName]: payload.clientName,
+        [columnMap.username]: payload.username,
+        password: payload.password,
+        status: payload.status,
+        [columnMap.updatedAt]: payload.updatedAt,
+      });
+      response = await supabase.from("clients").update(data).eq(columnMap.clientId, payload.clientId);
     } else if (action === "deleteClient") {
-      response = await supabase.from("clients").delete().eq("clientId", payload.clientId);
+      const clientSample = (cachedData?.clients || []).find((row) => row) || {};
+      const columnMap = getClientColumnMap(clientSample);
+      response = await supabase.from("clients").delete().eq(columnMap.clientId, payload.clientId);
     } else if (action === "addProject") {
       const data = pickFields(payload, [
         "projectId",

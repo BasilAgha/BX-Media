@@ -5,11 +5,19 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const statusEl = document.getElementById("addClientStatus");
   const actionStatusEl = document.getElementById("clientsActionStatus");
+  const clientsTableWrapper = document.getElementById("clientsTableWrapper");
   const detailModal = document.getElementById("clientDetailModal");
   const detailClose = document.getElementById("clientModalClose");
   const detailBody = document.getElementById("clientModalBody");
   const detailTitle = document.getElementById("clientModalTitle");
   const detailSubtitle = document.getElementById("clientModalSubtitle");
+
+  let data = null;
+  let clients = [];
+  let projects = [];
+  let tasks = [];
+  let actionsBound = false;
+  let modalActionsBound = false;
 
   const showActionStatus = (message, type = "success") => {
     if (!actionStatusEl) return;
@@ -23,29 +31,28 @@ document.addEventListener("DOMContentLoaded", async () => {
      RENDER CLIENTS TABLE
   --------------------------------------------------------- */
   async function renderClients() {
-    const wrapper = document.getElementById("clientsTableWrapper");
-    BXCore.renderSkeleton(wrapper, "table", 1);
+    if (!clientsTableWrapper) return;
+    BXCore.renderSkeleton(clientsTableWrapper, "table", 1);
 
-    let data;
     try {
       data = await BXCore.apiGetAll();
       BXCore.updateSidebarStats(data);
     } catch (err) {
       console.error(err);
-      wrapper.innerHTML =
+      clientsTableWrapper.innerHTML =
         '<div class="empty">We could not load clients. Please refresh and try again.</div>';
       showActionStatus("We could not load clients. Please refresh and try again.", "error");
       return;
     }
 
-    const clients = BXCore.validateClientsSchema(data.clients || []);
-    const projects = data.projects || [];
-    const tasks = data.tasks || [];
+    clients = BXCore.validateClientsSchema(data.clients || []);
+    projects = data.projects || [];
+    tasks = data.tasks || [];
 
-    wrapper.innerHTML = "";
+    clientsTableWrapper.innerHTML = "";
 
     if (!clients.length) {
-      wrapper.innerHTML = '<div class="empty">No clients found.</div>';
+      clientsTableWrapper.innerHTML = '<div class="empty">No clients found.</div>';
       return;
     }
 
@@ -61,7 +68,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           <th>Status</th>
           <th>Projects</th>
           <th>Tasks</th>
-          <th>View</th>
+          <th>Manage</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -83,8 +90,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         <td>${clientProjects.length}</td>
         <td>${clientTasks.length}</td>
         <td>
-          <button class="btn-secondary btn-compact" data-view="${c.clientId}" style="margin-right:0.35rem;">
-            <i class="fas fa-eye"></i> View
+          <button class="btn-secondary btn-compact" data-manage="${c.clientId}">
+            <i class="fas fa-gear"></i> Manage
           </button>
         </td>
       `;
@@ -92,25 +99,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     // Delete button handler
-    table.addEventListener("click", async (e) => {
-      const viewBtn = e.target.closest("button[data-view]");
-      if (viewBtn) {
-        const clientId = viewBtn.getAttribute("data-view");
-        const client = clients.find((c) => c.clientId === clientId);
-        const clientProjects = projects.filter((p) => p.clientId === clientId);
-        const clientTasks = tasks.filter((t) =>
-          clientProjects.some((p) => p.projectId === t.projectId)
-        );
-        renderClientDetail(client, clientProjects, clientTasks);
-        return;
-      }
-    });
-
     tableWrap.appendChild(table);
-    wrapper.appendChild(tableWrap);
+    clientsTableWrapper.appendChild(tableWrap);
   }
 
-  function renderClientDetail(client, clientProjects, clientTasks) {
+  function renderClientDetail(client, clientProjects, clientTasks, options = {}) {
     if (!detailModal || !detailBody) return;
     if (!client) return;
 
@@ -183,11 +176,58 @@ document.addEventListener("DOMContentLoaded", async () => {
           }
         </div>
       </div>
+      <div class="client-admin">
+        <div class="client-admin-header">
+          <div>
+            <h3>Client access</h3>
+            <p class="helper">Update name, login, or status. Leave password blank to keep it.</p>
+          </div>
+          <button type="button" class="btn-danger btn-compact" data-client-delete="${client.clientId}">
+            <i class="fas fa-trash"></i> Delete
+          </button>
+        </div>
+        <div id="clientEditStatus" class="alert alert-info" style="display:none"></div>
+        <form id="clientEditForm" class="form-grid" data-client-id="${client.clientId}">
+          <div class="client-admin-grid">
+            <div class="form-row">
+              <label for="editClientName">Client name</label>
+              <input id="editClientName" name="clientName" value="${client.clientName || ""}" required />
+            </div>
+            <div class="form-row">
+              <label for="editClientUsername">Username</label>
+              <input id="editClientUsername" name="username" value="${client.username || ""}" required />
+            </div>
+            <div class="form-row">
+              <label for="editClientPassword">Password</label>
+              <input id="editClientPassword" name="password" type="password" value="" placeholder="Leave blank to keep current" />
+            </div>
+            <div class="form-row">
+              <label for="editClientStatus">Status</label>
+              <select id="editClientStatus" name="status">
+                <option value="active" ${clientStatus === "active" ? "selected" : ""}>Active</option>
+                <option value="inactive" ${clientStatus === "inactive" ? "selected" : ""}>Inactive</option>
+                <option value="blocked" ${clientStatus === "blocked" ? "selected" : ""}>Blocked</option>
+                <option value="archived" ${clientStatus === "archived" ? "selected" : ""}>Archived</option>
+              </select>
+            </div>
+          </div>
+          <div class="client-admin-actions">
+            <button type="submit" class="btn-primary btn-compact">
+              <i class="fas fa-save"></i> Save changes
+            </button>
+          </div>
+        </form>
+      </div>
     `;
 
     detailModal.classList.add("is-open");
     detailModal.setAttribute("aria-hidden", "false");
     document.body.classList.add("modal-open");
+
+    if (options.focusEdit) {
+      const focusInput = detailBody.querySelector("#editClientName");
+      if (focusInput) setTimeout(() => focusInput.focus(), 0);
+    }
   }
 
   function closeDetailModal() {
@@ -267,6 +307,119 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (backdrop) backdrop.addEventListener("click", closeDetailModal);
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && detailModal.classList.contains("is-open")) closeDetailModal();
+    });
+  }
+
+  if (detailModal && !modalActionsBound) {
+    modalActionsBound = true;
+    detailModal.addEventListener("click", async (e) => {
+      const deleteBtn = e.target.closest("button[data-client-delete]");
+      if (!deleteBtn) return;
+      const clientId = deleteBtn.getAttribute("data-client-delete");
+      if (!clientId) return;
+
+      const confirmDelete = window.confirm(
+        "Delete this client? Projects and tasks will remain but may become orphaned."
+      );
+      if (!confirmDelete) return;
+
+      BXCore.setButtonLoading(deleteBtn, true, "Deleting...");
+      try {
+        await BXCore.apiPost({
+          action: "deleteClient",
+          clientId,
+        });
+        data = await BXCore.apiGetAll(true);
+        BXCore.updateSidebarStats(data);
+        clients = BXCore.validateClientsSchema(data.clients || []);
+        projects = data.projects || [];
+        tasks = data.tasks || [];
+        await renderClients();
+        closeDetailModal();
+        showActionStatus("Client deleted.", "success");
+      } catch (err) {
+        console.error(err);
+        showActionStatus("Couldn't delete the client. Please try again.", "error");
+      } finally {
+        BXCore.setButtonLoading(deleteBtn, false);
+      }
+    });
+
+    detailModal.addEventListener("submit", async (e) => {
+      const form = e.target.closest("#clientEditForm");
+      if (!form) return;
+      e.preventDefault();
+
+      const statusEl = form.querySelector("#clientEditStatus");
+      if (statusEl) statusEl.style.display = "none";
+      const submitBtn = form.querySelector("button[type=\"submit\"]");
+
+      const fd = new FormData(form);
+      const clientId = form.dataset.clientId;
+      const clientName = String(fd.get("clientName") || "").trim();
+      const username = String(fd.get("username") || "").trim();
+      const passwordRaw = String(fd.get("password") || "").trim();
+      const password = passwordRaw ? passwordRaw : undefined;
+      const status = String(fd.get("status") || "active").trim();
+
+      if (!clientName || !username) {
+        if (statusEl) {
+          statusEl.className = "alert alert-error";
+          statusEl.textContent = "Client name and username are required.";
+          statusEl.style.display = "block";
+        }
+        return;
+      }
+
+      BXCore.setButtonLoading(submitBtn, true, "Saving...");
+      try {
+        await BXCore.apiPost({
+          action: "updateClient",
+          clientId,
+          clientName,
+          username,
+          password,
+          status,
+          updatedAt: new Date().toISOString(),
+        });
+        data = await BXCore.apiGetAll(true);
+        BXCore.updateSidebarStats(data);
+        clients = BXCore.validateClientsSchema(data.clients || []);
+        projects = data.projects || [];
+        tasks = data.tasks || [];
+        await renderClients();
+        if (statusEl) {
+          statusEl.className = "alert alert-success";
+          statusEl.textContent = "Client updated successfully.";
+          statusEl.style.display = "block";
+        }
+      } catch (err) {
+        console.error(err);
+        if (statusEl) {
+          statusEl.className = "alert alert-error";
+          statusEl.textContent = "Couldn't update the client. Please try again.";
+          statusEl.style.display = "block";
+        }
+      } finally {
+        BXCore.setButtonLoading(submitBtn, false);
+      }
+    });
+  }
+
+  if (clientsTableWrapper && !actionsBound) {
+    actionsBound = true;
+    clientsTableWrapper.addEventListener("click", async (e) => {
+      const manageBtn = e.target.closest("button[data-manage]");
+
+      if (manageBtn) {
+        const clientId = manageBtn.getAttribute("data-manage");
+        const client = clients.find((c) => c.clientId === clientId);
+        const clientProjects = projects.filter((p) => p.clientId === clientId);
+        const clientTasks = tasks.filter((t) =>
+          clientProjects.some((p) => p.projectId === t.projectId)
+        );
+        renderClientDetail(client, clientProjects, clientTasks, { focusEdit: true });
+      }
     });
   }
 });

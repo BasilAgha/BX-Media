@@ -133,6 +133,18 @@ document.addEventListener("DOMContentLoaded", async () => {
       .join("");
   }
 
+  function getClientNameForTask(task) {
+    const project = projects.find((p) => p.projectId === task.projectId);
+    if (!project) return "—";
+    const client = clients.find((c) => c.clientId === project.clientId);
+    return client?.clientName || client?.username || client?.clientId || "—";
+  }
+
+  function getProjectNameForTask(task) {
+    const project = projects.find((p) => p.projectId === task.projectId);
+    return project?.name || project?.projectId || "—";
+  }
+
   function renderTasks() {
     tasksTableWrapper.innerHTML = "";
 
@@ -162,87 +174,93 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     const wrap = document.createElement("div");
-    wrap.className = "table-wrapper";
-    const table = document.createElement("table");
-    table.className = "tasks-table";
-    table.innerHTML = `
-      <thead>
-        <tr>
-          <th>Task</th>
-          <th>Project</th>
-          <th>Status</th>
-          <th>Progress</th>
-          <th>Due</th>
-          <th>Updated</th>
-          ${isAdmin ? "<th>Actions</th>" : ""}
-        </tr>
-      </thead>
-      <tbody></tbody>
-    `;
-    const tbody = table.querySelector("tbody");
+    wrap.className = "task-cards";
 
     filtered
       .slice()
       .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))
       .forEach((t) => {
-        const proj = projects.find((p) => p.projectId === t.projectId);
-        const tr = document.createElement("tr");
-        tr.dataset.taskId = t.taskId;
-        tr.innerHTML = `
-          <td>${t.title || ""}</td>
-          <td>
-            <select class="admin-project">
-              ${buildProjectOptions(t.projectId)}
-            </select>
-          </td>
-          <td>
-            ${
-              isAdmin
-                ? `<select class="admin-status">
-                     <option value="not-started" ${t.status === "not-started" ? "selected" : ""}>Not started</option>
-                     <option value="in-progress" ${t.status === "in-progress" ? "selected" : ""}>In progress</option>
-                     <option value="completed" ${t.status === "completed" ? "selected" : ""}>Completed</option>
-                     <option value="blocked" ${t.status === "blocked" ? "selected" : ""}>Blocked</option>
-                   </select>`
-                : `<span class="badge ${t.status || "not-started"}">${
-                    (t.status || "not-started").replace("-", " ")
-                  }</span>`
-            }
-          </td>
-          <td>
-            ${
-              isAdmin
-                ? `<input class="admin-progress" type="number" min="0" max="100" value="${
-                    t.progress || 0
-                  }" />`
-                : `${t.progress || 0}%`
-            }
-          </td>
-          <td>
-            ${
-              isAdmin
-                ? `<input class="admin-dueDate" type="date" value="${t.dueDate || ""}" />`
-                : BXCore.formatDate(t.dueDate)
-            }
-          </td>
-          <td>${BXCore.formatDateTime(t.updatedAt)}</td>
+        const clientName = getClientNameForTask(t);
+        const projectName = getProjectNameForTask(t);
+        const card = document.createElement("article");
+        card.className = "task-card";
+        card.dataset.taskId = t.taskId;
+        card.innerHTML = `
+          <header class="task-card-header">
+            <div>
+              <h3>${t.title || "Untitled task"}</h3>
+              <p class="task-card-meta">
+                <span>${projectName}</span>
+                <span class="task-card-sep">•</span>
+                <span>${clientName}</span>
+              </p>
+            </div>
+            <div>
+              ${
+                isAdmin
+                  ? `<select class="admin-status">
+                       <option value="not-started" ${t.status === "not-started" ? "selected" : ""}>Not started</option>
+                       <option value="in-progress" ${t.status === "in-progress" ? "selected" : ""}>In progress</option>
+                       <option value="completed" ${t.status === "completed" ? "selected" : ""}>Completed</option>
+                       <option value="blocked" ${t.status === "blocked" ? "selected" : ""}>Blocked</option>
+                     </select>`
+                  : `<span class="badge ${t.status || "not-started"}">${
+                      (t.status || "not-started").replace("-", " ")
+                    }</span>`
+              }
+            </div>
+          </header>
+          <div class="task-card-grid">
+            <div class="form-row">
+              <label>Project</label>
+              ${
+                isAdmin
+                  ? `<select class="admin-project">
+                       ${buildProjectOptions(t.projectId)}
+                     </select>`
+                  : `<div class="task-static">${projectName}</div>`
+              }
+            </div>
+            <div class="form-row">
+              <label>Progress</label>
+              ${
+                isAdmin
+                  ? `<input class="admin-progress" type="number" min="0" max="100" value="${
+                      t.progress || 0
+                    }" />`
+                  : `<div class="task-static">${t.progress || 0}%</div>`
+              }
+            </div>
+            <div class="form-row">
+              <label>Due date</label>
+              ${
+                isAdmin
+                  ? `<input class="admin-dueDate" type="date" value="${t.dueDate || ""}" />`
+                  : `<div class="task-static">${BXCore.formatDate(t.dueDate) || "—"}</div>`
+              }
+            </div>
+            <div class="form-row">
+              <label>Updated</label>
+              <div class="task-static">${BXCore.formatDateTime(t.updatedAt)}</div>
+            </div>
+          </div>
           ${
             isAdmin
-              ? `<td>
+              ? `<div class="task-card-actions">
                    <button class="ghost admin-save" type="button">Save</button>
                    <button class="btn-danger admin-delete" type="button">Delete</button>
-                 </td>`
+                 </div>`
               : ""
           }
         `;
-        tbody.appendChild(tr);
+        wrap.appendChild(card);
       });
 
     if (isAdmin) {
-      table.addEventListener("click", async (e) => {
-        const row = e.target.closest("tr[data-task-id]");
-        if (!row) return;
-        const taskId = row.dataset.taskId;
+      wrap.addEventListener("click", async (e) => {
+        const card = e.target.closest("article.task-card");
+        if (!card) return;
+        const taskId = card.dataset.taskId;
 
       if (e.target.classList.contains("admin-delete")) {
         if (!confirm("Delete this task?")) return;
@@ -265,10 +283,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       if (e.target.classList.contains("admin-save")) {
-        const projectSel = row.querySelector(".admin-project");
-        const statusSel = row.querySelector(".admin-status");
-        const progressInput = row.querySelector(".admin-progress");
-        const dueInput = row.querySelector(".admin-dueDate");
+        const projectSel = card.querySelector(".admin-project");
+        const statusSel = card.querySelector(".admin-status");
+        const progressInput = card.querySelector(".admin-progress");
+        const dueInput = card.querySelector(".admin-dueDate");
         BXCore.setButtonLoading(e.target, true, "Saving...");
         try {
           await BXCore.apiPost({
@@ -296,7 +314,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-    wrap.appendChild(table);
     tasksTableWrapper.appendChild(wrap);
   }
 

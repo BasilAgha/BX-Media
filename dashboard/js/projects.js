@@ -162,7 +162,6 @@ document.addEventListener("DOMContentLoaded", async () => {
           <div class="project-edit-actions">
             <div style="flex:1"></div>
             <div class="project-actions">
-              <button class="btn-danger admin-project-delete" type="button">Delete</button>
               <button class="btn-secondary admin-project-save" type="button">Save changes</button>
             </div>
           </div>
