@@ -24,6 +24,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     actionStatusEl.classList.add(`alert-${type}`);
     actionStatusEl.textContent = message;
     actionStatusEl.style.display = "block";
+    BXCore.showToast(message, type);
     setTimeout(() => {
       actionStatusEl.style.display = "none";
     }, 2200);
@@ -49,6 +50,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   let currentClientId = null;
   let currentProjectId = null;
+  const quickProjectId = new URLSearchParams(window.location.search).get("projectId");
 
   if (!isAdmin) {
     if (clientRow) clientRow.style.display = "none";
@@ -132,21 +134,46 @@ document.addEventListener("DOMContentLoaded", async () => {
       )
       .join("");
   }
-
   function getClientNameForTask(task) {
     const project = projects.find((p) => p.projectId === task.projectId);
-    if (!project) return "—";
+    if (!project) return "Unknown client";
     const client = clients.find((c) => c.clientId === project.clientId);
-    return client?.clientName || client?.username || client?.clientId || "—";
+    return client?.clientName || client?.username || client?.clientId || "Unknown client";
   }
 
   function getProjectNameForTask(task) {
     const project = projects.find((p) => p.projectId === task.projectId);
-    return project?.name || project?.projectId || "—";
+    return project?.name || project?.projectId || "Unknown project";
   }
 
   function renderTasks() {
     tasksTableWrapper.innerHTML = "";
+
+    if (!tasks.length) {
+      tasksTableWrapper.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon"><i class="fas fa-list-check"></i></div>
+          <div>
+            <h3>No tasks yet</h3>
+            <p>Create the first task to start tracking delivery.</p>
+            <button class="btn-primary" type="button" id="emptyAddTask">
+              <i class="fas fa-plus"></i> Add task
+            </button>
+          </div>
+        </div>
+      `;
+      const emptyAddBtn = document.getElementById("emptyAddTask");
+      if (emptyAddBtn) {
+        emptyAddBtn.addEventListener("click", () => {
+          if (!addTaskPanel) return;
+          addTaskPanel.classList.remove("is-collapsed");
+          addTaskPanel.setAttribute("aria-hidden", "false");
+          if (toggleAddTaskBtn) toggleAddTaskBtn.textContent = "Hide";
+          addTaskPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      }
+      return;
+    }
 
     let filtered = tasks.slice();
     if (currentClientId) {
@@ -166,7 +193,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           <div class="empty-icon"><i class="fas fa-list-check"></i></div>
           <div>
             <h3>No tasks match the filters</h3>
-            <p>Adjust the filters to find what you need.</p>
+            <p>Adjust filters or create a new task.</p>
           </div>
         </div>
       `;
@@ -191,7 +218,7 @@ document.addEventListener("DOMContentLoaded", async () => {
               <h3>${t.title || "Untitled task"}</h3>
               <p class="task-card-meta">
                 <span>${projectName}</span>
-                <span class="task-card-sep">•</span>
+                <span class="task-card-sep">&gt;</span>
                 <span>${clientName}</span>
               </p>
             </div>
@@ -236,7 +263,7 @@ document.addEventListener("DOMContentLoaded", async () => {
               ${
                 isAdmin
                   ? `<input class="admin-dueDate" type="date" value="${t.dueDate || ""}" />`
-                  : `<div class="task-static">${BXCore.formatDate(t.dueDate) || "—"}</div>`
+                  : `<div class="task-static">${BXCore.formatDate(t.dueDate) || "TBD"}</div>`
               }
             </div>
             <div class="form-row">
@@ -263,10 +290,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         const taskId = card.dataset.taskId;
 
       if (e.target.classList.contains("admin-delete")) {
-        if (!confirm("Delete this task?")) return;
+        const confirmDelete = await BXCore.confirmAction({
+          title: "Delete task?",
+          message: "This will permanently remove the task from the project.",
+          confirmLabel: "Delete task",
+          tone: "danger",
+        });
+        if (!confirmDelete) return;
         BXCore.setButtonLoading(e.target, true, "Deleting...");
         try {
-          await BXCore.apiPost({ action: "deleteTask", taskId });
+          const resp = await BXCore.apiPost({ action: "deleteTask", taskId });
+          if (!resp.ok) throw new Error(resp.error || "Delete failed");
           data = await BXCore.apiGetAll(true);
           BXCore.updateSidebarStats(data);
           projects = data.projects || [];
@@ -289,7 +323,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const dueInput = card.querySelector(".admin-dueDate");
         BXCore.setButtonLoading(e.target, true, "Saving...");
         try {
-          await BXCore.apiPost({
+          const resp = await BXCore.apiPost({
             action: "updateTask",
             taskId,
             projectId: projectSel.value,
@@ -298,6 +332,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             dueDate: dueInput.value || "",
             updatedAt: new Date().toISOString(),
           });
+          if (!resp.ok) throw new Error(resp.error || "Update failed");
           data = await BXCore.apiGetAll(true);
           BXCore.updateSidebarStats(data);
           projects = data.projects || [];
@@ -351,7 +386,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const dueDate = String(fd.get("dueDate") || "");
 
     try {
-      await BXCore.apiPost({
+      const resp = await BXCore.apiPost({
         action: "addTask",
         taskId,
         projectId,
@@ -363,6 +398,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
+      if (!resp.ok) throw new Error(resp.error || "Create failed");
 
       e.target.reset();
       if (addTaskStatus) {
@@ -388,5 +424,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   populateClientSelect();
   populateProjectSelects();
+
+  if (quickProjectId) {
+    const quickProject = projects.find((p) => p.projectId === quickProjectId);
+    if (quickProject) {
+      projectSelect.value = quickProjectId;
+      addTaskProjectSelect.value = quickProjectId;
+      if (addTaskPanel) {
+        addTaskPanel.classList.remove("is-collapsed");
+        addTaskPanel.setAttribute("aria-hidden", "false");
+        if (toggleAddTaskBtn) toggleAddTaskBtn.textContent = "Hide";
+        addTaskPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  }
+
   renderTasks();
 });

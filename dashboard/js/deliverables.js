@@ -46,6 +46,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     actionStatusEl.classList.add(`alert-${type}`);
     actionStatusEl.textContent = message;
     actionStatusEl.style.display = "block";
+    BXCore.showToast(message, type);
     setTimeout(() => {
       actionStatusEl.style.display = "none";
     }, 2200);
@@ -59,6 +60,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     editStatusEl.classList.add(`alert-${type}`);
     editStatusEl.textContent = message;
     editStatusEl.style.display = "block";
+    BXCore.showToast(message, type);
   };
 
   const resolveCoverImage = async (urlInput, fallbackValue = "") => {
@@ -109,6 +111,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let projects = data.projects || [];
   let deliverables = data.deliverables || [];
   let currentDeliverable = null;
+  const quickProjectId = new URLSearchParams(window.location.search).get("projectId");
 
   const getClientName = (clientId) => {
     const client = clients.find((c) => c.clientId === clientId);
@@ -344,7 +347,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             </div>
             <div class="deliverable-actions">
               <button class="btn-secondary" type="button" data-action="edit">Edit</button>
-              <button class="btn-danger" type="button" data-action="delete">Archive</button>
+              <button class="btn-danger" type="button" data-action="delete">Delete</button>
             </div>
           </div>
         `;
@@ -367,15 +370,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
       if (action === "delete") {
-        if (!confirm("Archive this deliverable? It will stay in records.")) return;
-        BXCore.setButtonLoading(actionBtn, true, "Archiving...");
+        const confirmDelete = await BXCore.confirmAction({
+          title: "Delete deliverable?",
+          message: "This will permanently remove the deliverable.",
+          confirmLabel: "Delete deliverable",
+          tone: "danger",
+        });
+        if (!confirmDelete) return;
+        BXCore.setButtonLoading(actionBtn, true, "Deleting...");
         try {
-          await BXCore.apiPost({
-            action: "updateDeliverable",
+          const resp = await BXCore.apiPost({
+            action: "deleteDeliverable",
             deliverableId,
-            status: "archived",
-            updatedAt: new Date().toISOString(),
           });
+          if (!resp.ok) throw new Error(resp.error || "Delete failed");
           data = await BXCore.apiGetAll(true);
           BXCore.updateSidebarStats(data);
           clients = data.clients || [];
@@ -385,7 +393,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           populateProjectSelect(projectSelect, clientSelect.value, "All projects");
           populateProjectSelect(addProjectSelect, addClientSelect.value, null);
           renderDeliverables();
-          showActionStatus("Deliverable removed. The list is up to date.", "success");
+          showActionStatus("Deliverable deleted. The list is up to date.", "success");
         } catch (err) {
           console.error(err);
           showActionStatus("Couldn't delete the deliverable. Please try again.", "error");
@@ -442,7 +450,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const deliverableId = "deliverable_" + Date.now();
     try {
       const coverImage = await resolveCoverImage(addCoverUrlInput);
-      await BXCore.apiPost({
+      const resp = await BXCore.apiPost({
         action: "addDeliverable",
         deliverableId,
         clientId,
@@ -463,6 +471,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
+      if (!resp.ok) throw new Error(resp.error || "Create failed");
       addForm.reset();
       if (addCoverUrlInput) addCoverUrlInput.value = "";
       if (addVisibleInput) addVisibleInput.checked = false;
@@ -512,7 +521,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     BXCore.setButtonLoading(submitBtn, true, "Saving...");
     try {
       const coverImage = await resolveCoverImage(editCover, editCover.value);
-      await BXCore.apiPost({
+      const resp = await BXCore.apiPost({
         action: "updateDeliverable",
         deliverableId: currentDeliverable.deliverableId,
         clientId,
@@ -532,6 +541,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         visibleToClient: editVisibleInput?.checked ? true : false,
         updatedAt: new Date().toISOString(),
       });
+      if (!resp.ok) throw new Error(resp.error || "Update failed");
       data = await BXCore.apiGetAll(true);
       BXCore.updateSidebarStats(data);
       clients = data.clients || [];
@@ -555,5 +565,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   populateClientSelects();
   populateProjectSelect(projectSelect, clientSelect.value, "All projects");
   populateProjectSelect(addProjectSelect, addClientSelect.value, null);
+
+  if (quickProjectId) {
+    const quickProject = projects.find((p) => p.projectId === quickProjectId);
+    if (quickProject) {
+      addClientSelect.value = quickProject.clientId;
+      populateProjectSelect(addProjectSelect, quickProject.clientId, null, quickProjectId);
+      if (addDeliverablePanel) {
+        addDeliverablePanel.classList.remove("is-collapsed");
+        addDeliverablePanel.setAttribute("aria-hidden", "false");
+        toggleAddDeliverableBtn.textContent = "Hide";
+        addDeliverablePanel.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  }
+
   renderDeliverables();
 });

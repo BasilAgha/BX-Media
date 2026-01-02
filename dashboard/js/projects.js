@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     actionStatusEl.classList.add(`alert-${type}`);
     actionStatusEl.textContent = message;
     actionStatusEl.style.display = "block";
+    BXCore.showToast(message, type);
     setTimeout(() => {
       actionStatusEl.style.display = "none";
     }, 2200);
@@ -44,6 +45,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   let projects = data.projects || [];
   let tasks = data.tasks || [];
   let projectActionsBound = false;
+
+  const openAddProject = () => {
+    if (!addProjectPanel) return;
+    addProjectPanel.classList.remove("is-collapsed");
+    addProjectPanel.setAttribute("aria-hidden", "false");
+    if (toggleAddProjectBtn) toggleAddProjectBtn.textContent = "Hide";
+    addProjectPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   function populateClientSelects() {
     clientFilterSelect.innerHTML = '<option value="all">All clients</option>';
@@ -74,8 +83,37 @@ document.addEventListener("DOMContentLoaded", async () => {
       filtered = filtered.filter((p) => (p.status || "not-started") === status);
     }
 
+    if (!projects.length) {
+      projectsList.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon"><i class="fas fa-folder-open"></i></div>
+          <div>
+            <h3>No projects yet</h3>
+            <p>Create the first project to start tracking delivery.</p>
+            <button class="btn-primary" type="button" id="emptyAddProject">
+              <i class="fas fa-plus"></i> Add project
+            </button>
+          </div>
+        </div>
+      `;
+      const addBtn = document.getElementById("emptyAddProject");
+      if (addBtn) addBtn.addEventListener("click", openAddProject);
+      return;
+    }
+
     if (!filtered.length) {
-      projectsList.innerHTML = '<div class="empty">No projects match the filter.</div>';
+      projectsList.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon"><i class="fas fa-filter"></i></div>
+          <div>
+            <h3>No projects match the filter</h3>
+            <p>Adjust filters or create a new project.</p>
+            <button class="btn-secondary" type="button" id="emptyAddProjectFiltered">Add project</button>
+          </div>
+        </div>
+      `;
+      const addBtn = document.getElementById("emptyAddProjectFiltered");
+      if (addBtn) addBtn.addEventListener("click", openAddProject);
       return;
     }
 
@@ -128,6 +166,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         <div class="project-desc" style="font-size:0.8rem;margin-top:0.3rem;">
           ${pTasks.length} tasks
         </div>
+        <div class="project-actions" style="margin-top:0.4rem;">
+          <button class="btn-secondary btn-compact project-quick-task" type="button">
+            <i class="fas fa-plus"></i> Add task
+          </button>
+          <button class="btn-secondary btn-compact project-quick-deliverable" type="button">
+            <i class="fas fa-box-open"></i> Add deliverable
+          </button>
+        </div>
         <div class="project-edit" aria-hidden="true">
           <div class="project-edit-title">Edit project</div>
           <div class="project-edit-grid">
@@ -173,6 +219,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!projectActionsBound) {
       projectActionsBound = true;
       projectsList.addEventListener("click", async (e) => {
+        const quickTaskBtn = e.target.closest(".project-quick-task");
+        const quickDeliverableBtn = e.target.closest(".project-quick-deliverable");
+        if (quickTaskBtn || quickDeliverableBtn) {
+          const card = e.target.closest(".project-card");
+          if (!card) return;
+          const projectId = card.dataset.projectId;
+          if (quickTaskBtn) {
+            window.location.href = `dashboard-tasks.html?projectId=${encodeURIComponent(projectId)}`;
+          } else {
+            window.location.href = `dashboard-deliverables.html?projectId=${encodeURIComponent(projectId)}`;
+          }
+          return;
+        }
+
         const toggleBtn = e.target.closest(".project-edit-toggle");
         if (toggleBtn) {
           const card = toggleBtn.closest(".project-card");
@@ -197,14 +257,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         const driveInput = card.querySelector(".admin-project-drive");
 
         if (deleteBtn) {
-          const confirmDelete = window.confirm("Delete this project? Related tasks will remain but may become orphaned.");
+          const confirmDelete = await BXCore.confirmAction({
+            title: "Delete project?",
+            message: "This will delete the project and all related tasks, deliverables, and updates.",
+            confirmLabel: "Delete project",
+            tone: "danger",
+          });
           if (!confirmDelete) return;
           BXCore.setButtonLoading(deleteBtn, true, "Deleting...");
           try {
-            await BXCore.apiPost({
+            const resp = await BXCore.apiPost({
               action: "deleteProject",
               projectId,
             });
+            if (!resp.ok) throw new Error(resp.error || "Delete failed");
             data = await BXCore.apiGetAll(true);
             BXCore.updateSidebarStats(data);
             clients = data.clients || [];
@@ -232,7 +298,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const nextStatus = statusSelect.value;
         const nextDriveLink = driveInput.value.trim();
         try {
-          await BXCore.apiPost({
+          const resp = await BXCore.apiPost({
             action: "updateProject",
             projectId,
             name: nextName,
@@ -244,6 +310,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             driveLink: nextDriveLink,
             updatedAt: new Date().toISOString(),
           });
+          if (!resp.ok) throw new Error(resp.error || "Update failed");
           data = await BXCore.apiGetAll(true);
           BXCore.updateSidebarStats(data);
           clients = data.clients || [];
@@ -274,10 +341,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (openAddProjectInline && addProjectPanel) {
     openAddProjectInline.addEventListener("click", () => {
-      addProjectPanel.classList.remove("is-collapsed");
-      addProjectPanel.setAttribute("aria-hidden", "false");
-      toggleAddProjectBtn.textContent = "Hide";
-      addProjectPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+      openAddProject();
     });
   }
 
@@ -322,7 +386,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
-      if (resp && resp.error) throw new Error(resp.error);
+      if (!resp.ok) throw new Error(resp.error || "Create failed");
 
       e.target.reset();
       if (statusBox) {

@@ -279,7 +279,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       BXCore.setButtonLoading(submitBtn, true, "Saving...");
       try {
-        await BXCore.apiPost({
+        const resp = await BXCore.apiPost({
           action: "addProject",
           projectId,
           clientId,
@@ -292,12 +292,15 @@ document.addEventListener("DOMContentLoaded", async () => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         });
+        if (!resp.ok) throw new Error(resp.error || "Create failed");
         quickProjectForm.reset();
         await refreshData();
         setQuickStatus("Project added successfully.", "success");
+        BXCore.showToast("Project added successfully.", "success");
       } catch (err) {
         console.error(err);
         setQuickStatus("Couldn't add the project. Please try again.", "error");
+        BXCore.showToast("Couldn't add the project. Please try again.", "error");
       } finally {
         BXCore.setButtonLoading(submitBtn, false);
       }
@@ -327,7 +330,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       BXCore.setButtonLoading(submitBtn, true, "Saving...");
       try {
-        await BXCore.apiPost({
+        const resp = await BXCore.apiPost({
           action: "addTask",
           taskId: "task_" + Date.now(),
           projectId,
@@ -339,12 +342,15 @@ document.addEventListener("DOMContentLoaded", async () => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         });
+        if (!resp.ok) throw new Error(resp.error || "Create failed");
         quickTaskForm.reset();
         await refreshData();
         setQuickStatus("Task added successfully.", "success");
+        BXCore.showToast("Task added successfully.", "success");
       } catch (err) {
         console.error(err);
         setQuickStatus("Couldn't add the task. Please try again.", "error");
+        BXCore.showToast("Couldn't add the task. Please try again.", "error");
       } finally {
         BXCore.setButtonLoading(submitBtn, false);
       }
@@ -371,7 +377,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       BXCore.setButtonLoading(submitBtn, true, "Saving...");
       try {
-        await BXCore.apiPost({
+        const resp = await BXCore.apiPost({
           action: "addClient",
           clientId: "client_" + Date.now(),
           clientName: name,
@@ -381,12 +387,15 @@ document.addEventListener("DOMContentLoaded", async () => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         });
+        if (!resp.ok) throw new Error(resp.error || "Create failed");
         quickClientForm.reset();
         await refreshData();
         setQuickStatus("Client added successfully.", "success");
+        BXCore.showToast("Client added successfully.", "success");
       } catch (err) {
         console.error(err);
         setQuickStatus("Couldn't add the client. Please try again.", "error");
+        BXCore.showToast("Couldn't add the client. Please try again.", "error");
       } finally {
         BXCore.setButtonLoading(submitBtn, false);
       }

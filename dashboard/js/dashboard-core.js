@@ -91,6 +91,116 @@
     btn.setAttribute("aria-busy", isLoading ? "true" : "false");
   }
 
+  function ensureToastContainer() {
+    let stack = document.getElementById("toastStack");
+    if (stack) return stack;
+    stack = document.createElement("div");
+    stack.id = "toastStack";
+    stack.className = "toast-stack";
+    stack.setAttribute("aria-live", "polite");
+    stack.setAttribute("aria-atomic", "false");
+    document.body.appendChild(stack);
+    return stack;
+  }
+
+  function showToast(message, type = "info", options = {}) {
+    if (!message) return;
+    const stack = ensureToastContainer();
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type}`;
+    toast.setAttribute("role", "status");
+    toast.innerHTML = `
+      <div class="toast-body">${message}</div>
+      <button class="toast-close" type="button" aria-label="Dismiss">Dismiss</button>
+    `;
+    stack.appendChild(toast);
+
+    const close = () => {
+      toast.classList.add("is-leaving");
+      setTimeout(() => toast.remove(), 220);
+    };
+
+    toast.querySelector(".toast-close").addEventListener("click", close);
+
+    const ttl = Number.isFinite(options.duration) ? options.duration : 3200;
+    if (ttl > 0) {
+      setTimeout(close, ttl);
+    }
+  }
+
+  function ensureConfirmModal() {
+    let modal = document.getElementById("confirmModal");
+    if (modal) return modal;
+    modal = document.createElement("div");
+    modal.id = "confirmModal";
+    modal.className = "modal confirm-modal";
+    modal.setAttribute("aria-hidden", "true");
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    modal.innerHTML = `
+      <div class="modal-backdrop" data-modal-close></div>
+      <div class="modal-panel">
+        <div class="modal-header">
+          <div>
+            <h2 id="confirmModalTitle">Confirm action</h2>
+            <p id="confirmModalMessage" class="modal-helper"></p>
+          </div>
+          <button class="ghost" type="button" data-modal-close>Close</button>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-secondary" type="button" data-modal-cancel>Cancel</button>
+          <button class="btn-danger" type="button" data-modal-confirm>Confirm</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    return modal;
+  }
+
+  function confirmAction(options = {}) {
+    const modal = ensureConfirmModal();
+    const titleEl = modal.querySelector("#confirmModalTitle");
+    const messageEl = modal.querySelector("#confirmModalMessage");
+    const confirmBtn = modal.querySelector("[data-modal-confirm]");
+    const cancelBtn = modal.querySelector("[data-modal-cancel]");
+
+    titleEl.textContent = options.title || "Confirm action";
+    messageEl.textContent = options.message || "Are you sure you want to continue?";
+    confirmBtn.textContent = options.confirmLabel || "Confirm";
+    confirmBtn.className = options.tone === "danger" ? "btn-danger" : "btn-primary";
+
+    modal.classList.add("is-open");
+    modal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+
+    return new Promise((resolve) => {
+      const close = (result) => {
+        modal.removeEventListener("click", onBackdrop);
+        cancelBtn.removeEventListener("click", onCancel);
+        confirmBtn.removeEventListener("click", onConfirm);
+        document.removeEventListener("keydown", onEsc);
+        modal.classList.remove("is-open");
+        modal.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("modal-open");
+        resolve(result);
+      };
+
+      const onBackdrop = (e) => {
+        if (e.target.closest("[data-modal-close]")) close(false);
+      };
+      const onCancel = () => close(false);
+      const onConfirm = () => close(true);
+      const onEsc = (e) => {
+        if (e.key === "Escape") close(false);
+      };
+
+      modal.addEventListener("click", onBackdrop);
+      cancelBtn.addEventListener("click", onCancel);
+      confirmBtn.addEventListener("click", onConfirm);
+      document.addEventListener("keydown", onEsc);
+    });
+  }
+
   function renderSkeleton(container, type, count = 3) {
     if (!container) return;
     container.innerHTML = "";
@@ -125,9 +235,7 @@
   }
 
   function warnRlsStatus() {
-    console.warn(
-      "RLS WARNING: Unable to verify from the client. Ensure Row Level Security is disabled on all tables."
-    );
+    return;
   }
 
   function withClientIdAliases(rows) {
@@ -141,19 +249,93 @@
       if (next.updated_at !== undefined && next.updatedAt === undefined) next.updatedAt = next.updated_at;
       if (next.project_id !== undefined && next.projectId === undefined) next.projectId = next.project_id;
       if (next.task_id !== undefined && next.taskId === undefined) next.taskId = next.task_id;
+      if (next.due_date !== undefined && next.dueDate === undefined) next.dueDate = next.due_date;
+      if (next.drive_link !== undefined && next.driveLink === undefined) next.driveLink = next.drive_link;
       if (next.deliverable_id !== undefined && next.deliverableId === undefined) next.deliverableId = next.deliverable_id;
+      if (next.deliverable_name !== undefined && next.name === undefined) next.name = next.deliverable_name;
+      if (next.project_name !== undefined && next.projectName === undefined) next.projectName = next.project_name;
+      if (next.cover_image_url !== undefined && next.coverImage === undefined) next.coverImage = next.cover_image_url;
+      if (next.delivery_link !== undefined && next.deliveryLink === undefined) next.deliveryLink = next.delivery_link;
       if (next.comment_id !== undefined && next.commentId === undefined) next.commentId = next.comment_id;
+      if (next.text !== undefined && next.body === undefined) next.body = next.text;
       return next;
     });
   }
 
   function getClientColumnMap(sample = {}) {
     return {
-      clientId: sample.client_id !== undefined ? "client_id" : "clientId",
-      clientName: sample.client_name !== undefined ? "client_name" : "clientName",
-      username: sample.user_name !== undefined ? "user_name" : "username",
-      createdAt: sample.created_at !== undefined ? "created_at" : "createdAt",
-      updatedAt: sample.updated_at !== undefined ? "updated_at" : "updatedAt",
+      clientId: "client_id",
+      clientName: "client_name",
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+    };
+  }
+
+  function getProjectColumnMap(sample = {}) {
+    return {
+      projectId: "project_id",
+      clientId: "client_id",
+      name: "name",
+      description: "description",
+      status: "status",
+      driveLink: "drive_link",
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+    };
+  }
+
+  function getTaskColumnMap(sample = {}) {
+    return {
+      taskId: "task_id",
+      projectId: "project_id",
+      title: "title",
+      description: "description",
+      status: "status",
+      progress: "progress",
+      dueDate: "due_date",
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+    };
+  }
+
+  function getDeliverableColumnMap(sample = {}) {
+    return {
+      deliverableId: "deliverable_id",
+      clientId: "client_id",
+      projectId: "project_id",
+      projectName: "project_name",
+      name: "deliverable_name",
+      status: "status",
+      coverImage: "cover_image_url",
+      description: "description",
+      deliveryLink: "delivery_link",
+      visibleToClient: "visible_to_client",
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+    };
+  }
+
+  function getCommentColumnMap(sample = {}) {
+    return {
+      commentId: "comment_id",
+      taskId: "task_id",
+      projectId: "project_id",
+      body: "text",
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+    };
+  }
+
+  function getAccountColumnMap(sample = {}) {
+    return {
+      username: "username",
+      password: "password",
+      role: "role",
+      status: "status",
+      clientId: "client_id",
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+      name: "name",
     };
   }
 
@@ -228,9 +410,21 @@
       }
 
       const normalizedClients = validateClientsSchema(withClientIdAliases(clientsRes.data || []));
+      const normalizedAccounts = withClientIdAliases(accountsRes.data || []);
+      if (normalizedAccounts.length && normalizedClients.length) {
+        const accountByClientId = new Map();
+        normalizedAccounts.forEach((acct) => {
+          if (acct.clientId) accountByClientId.set(acct.clientId, acct);
+        });
+        normalizedClients.forEach((client) => {
+          if (!client.username && accountByClientId.has(client.clientId)) {
+            client.username = accountByClientId.get(client.clientId).username || "";
+          }
+        });
+      }
       cachedData = {
         ok: true,
-        accounts: withClientIdAliases(accountsRes.data || []),
+        accounts: normalizedAccounts,
         clients: normalizedClients,
         projects: withClientIdAliases(projectsRes.data || []),
         tasks: withClientIdAliases(tasksRes.data || []),
@@ -294,6 +488,30 @@
     }
 
     const action = payload.action || "";
+    const sess = getLocalSession();
+    if (!sess) {
+      return { ok: false, error: "Not authenticated" };
+    }
+    const adminOnlyActions = new Set([
+      "addClient",
+      "updateClient",
+      "deleteClient",
+      "addProject",
+      "updateProject",
+      "deleteProject",
+      "addTask",
+      "updateTask",
+      "deleteTask",
+      "addDeliverable",
+      "updateDeliverable",
+      "deleteDeliverable",
+      "addUpdate",
+      "updateUpdate",
+      "deleteUpdate",
+    ]);
+    if (adminOnlyActions.has(action) && sess.role !== "admin") {
+      return { ok: false, error: "Access denied" };
+    }
 
     const pickFields = (source, fields) => {
       const out = {};
@@ -318,129 +536,239 @@
       const data = pickDefined({
         [columnMap.clientId]: payload.clientId,
         [columnMap.clientName]: payload.clientName,
-        [columnMap.username]: payload.username,
-        password: payload.password,
         status: payload.status,
         [columnMap.createdAt]: payload.createdAt,
         [columnMap.updatedAt]: payload.updatedAt,
       });
       response = await supabase.from("clients").insert([data]);
+      if (response?.error) {
+        return { ok: false, error: response.error.message };
+      }
+
+      const accountSample = (cachedData?.accounts || []).find((row) => row) || {};
+      const accountMap = getAccountColumnMap(accountSample);
+      const accountData = pickDefined({
+        [accountMap.username]: payload.username,
+        [accountMap.password]: payload.password,
+        [accountMap.role]: "client",
+        [accountMap.name]: payload.clientName,
+        [accountMap.status]: payload.status || "active",
+        [accountMap.clientId]: payload.clientId,
+        [accountMap.createdAt]: payload.createdAt,
+        [accountMap.updatedAt]: payload.updatedAt,
+      });
+      const accountResp = await supabase.from("accounts").insert([accountData]);
+      if (accountResp?.error) {
+        return { ok: false, error: accountResp.error.message };
+      }
     } else if (action === "updateClient") {
       const clientSample = (cachedData?.clients || []).find((row) => row) || {};
       const columnMap = getClientColumnMap(clientSample);
       const data = pickDefined({
         [columnMap.clientName]: payload.clientName,
-        [columnMap.username]: payload.username,
-        password: payload.password,
         status: payload.status,
         [columnMap.updatedAt]: payload.updatedAt,
       });
       response = await supabase.from("clients").update(data).eq(columnMap.clientId, payload.clientId);
+      if (response?.error) {
+        return { ok: false, error: response.error.message };
+      }
+
+      const accountSample = (cachedData?.accounts || []).find((row) => row) || {};
+      const accountMap = getAccountColumnMap(accountSample);
+      const accountData = pickDefined({
+        [accountMap.username]: payload.username,
+        [accountMap.password]: payload.password,
+        [accountMap.name]: payload.clientName,
+        [accountMap.status]: payload.status,
+        [accountMap.updatedAt]: payload.updatedAt,
+      });
+      const accountUpdate = await supabase
+        .from("accounts")
+        .update(accountData)
+        .eq(accountMap.clientId, payload.clientId);
+      if (accountUpdate?.error) {
+        return { ok: false, error: accountUpdate.error.message };
+      }
     } else if (action === "deleteClient") {
       const clientSample = (cachedData?.clients || []).find((row) => row) || {};
       const columnMap = getClientColumnMap(clientSample);
       response = await supabase.from("clients").delete().eq(columnMap.clientId, payload.clientId);
+      if (response?.error) {
+        return { ok: false, error: response.error.message };
+      }
+
+      const clientMatch =
+        (cachedData?.clients || []).find((row) => row?.clientId === payload.clientId) || {};
+      const accountClientId = clientMatch.clientId || payload.clientId;
+      const accountUsername = clientMatch.username || payload.username;
+
+      if (accountClientId) {
+        const accountRes = await supabase
+          .from("accounts")
+          .update({ status: "archived", updated_at: new Date().toISOString() })
+          .eq("client_id", accountClientId);
+        if (accountRes?.error) {
+          return { ok: false, error: accountRes.error.message };
+        }
+      }
+
+      if (accountUsername) {
+        const accountRes = await supabase
+          .from("accounts")
+          .update({ status: "archived", updated_at: new Date().toISOString() })
+          .eq("username", accountUsername);
+        if (accountRes?.error) {
+          return { ok: false, error: accountRes.error.message };
+        }
+      }
     } else if (action === "addProject") {
-      const data = pickFields(payload, [
-        "projectId",
-        "clientId",
-        "name",
-        "description",
-        "status",
-        "driveLink",
-        "createdAt",
-        "updatedAt",
-      ]);
+      const projectSample = (cachedData?.projects || []).find((row) => row) || {};
+      const columnMap = getProjectColumnMap(projectSample);
+      const data = pickDefined({
+        [columnMap.projectId]: payload.projectId,
+        [columnMap.clientId]: payload.clientId,
+        [columnMap.name]: payload.name,
+        [columnMap.description]: payload.description,
+        [columnMap.status]: payload.status,
+        [columnMap.driveLink]: payload.driveLink,
+        [columnMap.createdAt]: payload.createdAt,
+        [columnMap.updatedAt]: payload.updatedAt,
+      });
       response = await supabase.from("projects").insert([data]);
     } else if (action === "updateProject") {
-      const data = pickFields(payload, [
-        "clientId",
-        "name",
-        "description",
-        "status",
-        "driveLink",
-        "updatedAt",
-      ]);
-      response = await supabase.from("projects").update(data).eq("projectId", payload.projectId);
+      const projectSample = (cachedData?.projects || []).find((row) => row) || {};
+      const columnMap = getProjectColumnMap(projectSample);
+      const data = pickDefined({
+        [columnMap.clientId]: payload.clientId,
+        [columnMap.name]: payload.name,
+        [columnMap.description]: payload.description,
+        [columnMap.status]: payload.status,
+        [columnMap.driveLink]: payload.driveLink,
+        [columnMap.updatedAt]: payload.updatedAt,
+      });
+      response = await supabase.from("projects").update(data).eq(columnMap.projectId, payload.projectId);
     } else if (action === "deleteProject") {
-      response = await supabase.from("projects").delete().eq("projectId", payload.projectId);
+      const projectSample = (cachedData?.projects || []).find((row) => row) || {};
+      const taskSample = (cachedData?.tasks || []).find((row) => row) || {};
+      const deliverableSample = (cachedData?.deliverables || []).find((row) => row) || {};
+      const commentSample = (cachedData?.comments || []).find((row) => row) || {};
+      const projectMap = getProjectColumnMap(projectSample);
+      const taskMap = getTaskColumnMap(taskSample);
+      const deliverableMap = getDeliverableColumnMap(deliverableSample);
+      const commentMap = getCommentColumnMap(commentSample);
+      const projectId = payload.projectId;
+
+      const taskDelete = await supabase.from("tasks").delete().eq(taskMap.projectId, projectId);
+      if (taskDelete.error) return { ok: false, error: taskDelete.error.message };
+
+      const deliverableDelete = await supabase
+        .from("deliverables")
+        .delete()
+        .eq(deliverableMap.projectId, projectId);
+      if (deliverableDelete.error) return { ok: false, error: deliverableDelete.error.message };
+
+      const commentDelete = await supabase
+        .from("comments")
+        .delete()
+        .eq(commentMap.projectId, projectId);
+      if (commentDelete.error) return { ok: false, error: commentDelete.error.message };
+
+      response = await supabase.from("projects").delete().eq(projectMap.projectId, projectId);
     } else if (action === "addTask") {
-      const data = pickFields(payload, [
-        "taskId",
-        "projectId",
-        "title",
-        "description",
-        "status",
-        "progress",
-        "dueDate",
-        "createdAt",
-        "updatedAt",
-      ]);
+      const taskSample = (cachedData?.tasks || []).find((row) => row) || {};
+      const columnMap = getTaskColumnMap(taskSample);
+      const data = pickDefined({
+        [columnMap.taskId]: payload.taskId,
+        [columnMap.projectId]: payload.projectId,
+        [columnMap.title]: payload.title,
+        [columnMap.description]: payload.description,
+        [columnMap.status]: payload.status,
+        [columnMap.progress]: payload.progress,
+        [columnMap.dueDate]: payload.dueDate,
+        [columnMap.createdAt]: payload.createdAt,
+        [columnMap.updatedAt]: payload.updatedAt,
+      });
       response = await supabase.from("tasks").insert([data]);
     } else if (action === "updateTask") {
-      const data = pickFields(payload, [
-        "projectId",
-        "title",
-        "description",
-        "status",
-        "progress",
-        "dueDate",
-        "updatedAt",
-      ]);
-      response = await supabase.from("tasks").update(data).eq("taskId", payload.taskId);
+      const taskSample = (cachedData?.tasks || []).find((row) => row) || {};
+      const columnMap = getTaskColumnMap(taskSample);
+      const data = pickDefined({
+        [columnMap.projectId]: payload.projectId,
+        [columnMap.title]: payload.title,
+        [columnMap.description]: payload.description,
+        [columnMap.status]: payload.status,
+        [columnMap.progress]: payload.progress,
+        [columnMap.dueDate]: payload.dueDate,
+        [columnMap.updatedAt]: payload.updatedAt,
+      });
+      response = await supabase.from("tasks").update(data).eq(columnMap.taskId, payload.taskId);
     } else if (action === "deleteTask") {
-      response = await supabase.from("tasks").delete().eq("taskId", payload.taskId);
+      const taskSample = (cachedData?.tasks || []).find((row) => row) || {};
+      const columnMap = getTaskColumnMap(taskSample);
+      response = await supabase.from("tasks").delete().eq(columnMap.taskId, payload.taskId);
     } else if (action === "addDeliverable") {
-      const data = pickFields(payload, [
-        "deliverableId",
-        "clientId",
-        "projectId",
-        "name",
-        "status",
-        "coverImage",
-        "description",
-        "deliveryLink",
-        "downloadLink",
-        "previewLink",
-        "driveLink",
-        "visibleToClient",
-        "createdAt",
-        "updatedAt",
-      ]);
+      const deliverableSample = (cachedData?.deliverables || []).find((row) => row) || {};
+      const columnMap = getDeliverableColumnMap(deliverableSample);
+      const data = pickDefined({
+        [columnMap.deliverableId]: payload.deliverableId,
+        [columnMap.clientId]: payload.clientId,
+        [columnMap.projectId]: payload.projectId,
+        [columnMap.projectName]: payload.projectName,
+        [columnMap.name]: payload.name,
+        [columnMap.status]: payload.status,
+        [columnMap.coverImage]: payload.coverImage,
+        [columnMap.description]: payload.description,
+        [columnMap.deliveryLink]: payload.deliveryLink,
+        [columnMap.visibleToClient]: payload.visibleToClient,
+        [columnMap.createdAt]: payload.createdAt,
+        [columnMap.updatedAt]: payload.updatedAt,
+      });
       response = await supabase.from("deliverables").insert([data]);
     } else if (action === "updateDeliverable") {
-      const data = pickFields(payload, [
-        "clientId",
-        "projectId",
-        "name",
-        "status",
-        "coverImage",
-        "description",
-        "deliveryLink",
-        "downloadLink",
-        "previewLink",
-        "driveLink",
-        "visibleToClient",
-        "updatedAt",
-      ]);
-      response = await supabase.from("deliverables").update(data).eq("deliverableId", payload.deliverableId);
+      const deliverableSample = (cachedData?.deliverables || []).find((row) => row) || {};
+      const columnMap = getDeliverableColumnMap(deliverableSample);
+      const data = pickDefined({
+        [columnMap.clientId]: payload.clientId,
+        [columnMap.projectId]: payload.projectId,
+        [columnMap.projectName]: payload.projectName,
+        [columnMap.name]: payload.name,
+        [columnMap.status]: payload.status,
+        [columnMap.coverImage]: payload.coverImage,
+        [columnMap.description]: payload.description,
+        [columnMap.deliveryLink]: payload.deliveryLink,
+        [columnMap.visibleToClient]: payload.visibleToClient,
+        [columnMap.updatedAt]: payload.updatedAt,
+      });
+      response = await supabase.from("deliverables").update(data).eq(columnMap.deliverableId, payload.deliverableId);
     } else if (action === "deleteDeliverable") {
-      response = await supabase.from("deliverables").delete().eq("deliverableId", payload.deliverableId);
+      const deliverableSample = (cachedData?.deliverables || []).find((row) => row) || {};
+      const columnMap = getDeliverableColumnMap(deliverableSample);
+      response = await supabase.from("deliverables").delete().eq(columnMap.deliverableId, payload.deliverableId);
     } else if (action === "addUpdate") {
-      const data = pickFields(payload, [
-        "commentId",
-        "taskId",
-        "projectId",
-        "body",
-        "createdAt",
-        "updatedAt",
-      ]);
+      const commentSample = (cachedData?.comments || []).find((row) => row) || {};
+      const columnMap = getCommentColumnMap(commentSample);
+      const data = pickDefined({
+        [columnMap.commentId]: payload.commentId,
+        [columnMap.taskId]: payload.taskId,
+        [columnMap.projectId]: payload.projectId,
+        [columnMap.body]: payload.body,
+        [columnMap.createdAt]: payload.createdAt,
+        [columnMap.updatedAt]: payload.updatedAt,
+      });
       response = await supabase.from("comments").insert([data]);
     } else if (action === "updateUpdate") {
-      const data = pickFields(payload, ["body", "updatedAt"]);
-      response = await supabase.from("comments").update(data).eq("commentId", payload.commentId);
+      const commentSample = (cachedData?.comments || []).find((row) => row) || {};
+      const columnMap = getCommentColumnMap(commentSample);
+      const data = pickDefined({
+        [columnMap.body]: payload.body,
+        [columnMap.updatedAt]: payload.updatedAt,
+      });
+      response = await supabase.from("comments").update(data).eq(columnMap.commentId, payload.commentId);
     } else if (action === "deleteUpdate") {
-      response = await supabase.from("comments").delete().eq("commentId", payload.commentId);
+      const commentSample = (cachedData?.comments || []).find((row) => row) || {};
+      const columnMap = getCommentColumnMap(commentSample);
+      response = await supabase.from("comments").delete().eq(columnMap.commentId, payload.commentId);
     } else {
       return { ok: false, error: "Unknown action" };
     }
@@ -575,7 +903,7 @@
   function validateClientsSchema(clients = []) {
     return (clients || []).map((c) => {
       const next = { ...c };
-      const required = ["clientId", "clientName", "username", "password", "status", "createdAt", "updatedAt"];
+      const required = ["clientId", "clientName", "status", "createdAt", "updatedAt"];
       required.forEach((key) => {
         if (next[key] === undefined || next[key] === null) {
           next[key] = key === "status" ? "active" : "";
@@ -746,6 +1074,8 @@
     validateClientsSchema,
     ALLOWED_CLIENT_STATUSES,
     disableButton,
+    showToast,
+    confirmAction,
   };
 })();
 

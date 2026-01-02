@@ -160,7 +160,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const deadlineRaw = p.deadline || p.dueDate || p.targetDate || p.deliveryDate || "";
     const deadlineLabel = deadlineRaw ? BXCore.formatDate(deadlineRaw) : "TBD";
 
-    const progressLabel = progress === 0 ? "—" : `${progress}%`;
+    const progressLabel = progress === 0 ? "--" : `${progress}%`;
     const progressHelper = progress === 0 ? "No tasks yet" : "";
     const row = document.createElement("article");
     row.className = "project-row project-row-link";

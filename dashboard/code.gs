@@ -70,6 +70,7 @@ function handlePost(data) {
       // DELIVERABLES
       case "addDeliverable": return handleAddDeliverable(data);
       case "updateDeliverable": return handleUpdateDeliverable(data);
+      case "deleteDeliverable": return handleDeleteDeliverable(data);
       case "archiveDeliverable": return handleArchiveDeliverable(data);
 
       default:
@@ -266,16 +267,35 @@ function handleDeleteProject(d) {
   var user = getUserFromRequest(d);
   requireRole(user, ["admin"]);
 
-  var sheet = getSheet("Projects");
-  var values = sheet.getDataRange().getValues();
-  var headers = values[0];
-  var idIndex = getHeaderIndex(headers, "projectId", "Projects");
-  var statusIndex = getHeaderIndex(headers, "status", "Projects");
+  var projectId = d.projectId;
+  if (!projectId) throw new Error("Missing projectId");
 
-  for (var i = 1; i < values.length; i++) {
-    if (values[i][idIndex] === d.projectId) {
-      sheet.getRange(i + 1, statusIndex + 1).setValue("archived");
-      break;
+  var projectSheet = getSheet("Projects");
+  var projectValues = projectSheet.getDataRange().getValues();
+  var projectHeaders = projectValues[0];
+  var projectIdIndex = getHeaderIndex(projectHeaders, "projectId", "Projects");
+
+  for (var i = projectValues.length - 1; i >= 1; i--) {
+    if (projectValues[i][projectIdIndex] === projectId) {
+      projectSheet.deleteRow(i + 1);
+    }
+  }
+
+  var taskSheet = getSheet("Tasks");
+  var taskValues = taskSheet.getDataRange().getValues();
+  var taskProjectIndex = getHeaderIndex(taskValues[0], "projectId", "Tasks");
+  for (var j = taskValues.length - 1; j >= 1; j--) {
+    if (taskValues[j][taskProjectIndex] === projectId) {
+      taskSheet.deleteRow(j + 1);
+    }
+  }
+
+  var deliverableSheet = getSheet("Deliverables");
+  var deliverableValues = deliverableSheet.getDataRange().getValues();
+  var deliverableProjectIndex = getHeaderIndex(deliverableValues[0], "projectId", "Deliverables");
+  for (var k = deliverableValues.length - 1; k >= 1; k--) {
+    if (deliverableValues[k][deliverableProjectIndex] === projectId) {
+      deliverableSheet.deleteRow(k + 1);
     }
   }
   return { ok: true };
@@ -388,6 +408,22 @@ function handleUpdateDeliverable(d) {
         }
       });
       break;
+    }
+  }
+  return { ok: true };
+}
+
+function handleDeleteDeliverable(d) {
+  var user = getUserFromRequest(d);
+  requireRole(user, ["admin"]);
+
+  var sheet = getSheet("Deliverables");
+  var values = sheet.getDataRange().getValues();
+  var idIndex = getHeaderIndex(values[0], "deliverableId", "Deliverables");
+
+  for (var i = values.length - 1; i >= 1; i--) {
+    if (values[i][idIndex] === d.deliverableId) {
+      sheet.deleteRow(i + 1);
     }
   }
   return { ok: true };

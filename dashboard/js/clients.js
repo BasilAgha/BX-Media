@@ -25,6 +25,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     actionStatusEl.classList.add(`alert-${type}`);
     actionStatusEl.textContent = message;
     actionStatusEl.style.display = "block";
+    BXCore.showToast(message, type);
   };
 
   /* ---------------------------------------------------------
@@ -271,7 +272,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         updatedAt: new Date().toISOString(),
       });
 
-      if (resp && resp.error) throw new Error(resp.error);
+      if (!resp.ok) throw new Error(resp.error || "Create failed");
 
       e.target.reset();
 
@@ -318,17 +319,21 @@ document.addEventListener("DOMContentLoaded", async () => {
       const clientId = deleteBtn.getAttribute("data-client-delete");
       if (!clientId) return;
 
-      const confirmDelete = window.confirm(
-        "Delete this client? Projects and tasks will remain but may become orphaned."
-      );
+      const confirmDelete = await BXCore.confirmAction({
+        title: "Delete client?",
+        message: "Projects and tasks will remain but may become orphaned.",
+        confirmLabel: "Delete client",
+        tone: "danger",
+      });
       if (!confirmDelete) return;
 
       BXCore.setButtonLoading(deleteBtn, true, "Deleting...");
       try {
-        await BXCore.apiPost({
+        const resp = await BXCore.apiPost({
           action: "deleteClient",
           clientId,
         });
+        if (!resp.ok) throw new Error(resp.error || "Delete failed");
         data = await BXCore.apiGetAll(true);
         BXCore.updateSidebarStats(data);
         clients = BXCore.validateClientsSchema(data.clients || []);
@@ -373,7 +378,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       BXCore.setButtonLoading(submitBtn, true, "Saving...");
       try {
-        await BXCore.apiPost({
+        const resp = await BXCore.apiPost({
           action: "updateClient",
           clientId,
           clientName,
@@ -382,6 +387,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           status,
           updatedAt: new Date().toISOString(),
         });
+        if (!resp.ok) throw new Error(resp.error || "Update failed");
         data = await BXCore.apiGetAll(true);
         BXCore.updateSidebarStats(data);
         clients = BXCore.validateClientsSchema(data.clients || []);
@@ -393,6 +399,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           statusEl.textContent = "Client updated successfully.";
           statusEl.style.display = "block";
         }
+        BXCore.showToast("Client updated successfully.", "success");
       } catch (err) {
         console.error(err);
         if (statusEl) {
@@ -400,6 +407,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           statusEl.textContent = "Couldn't update the client. Please try again.";
           statusEl.style.display = "block";
         }
+        BXCore.showToast("Couldn't update the client. Please try again.", "error");
       } finally {
         BXCore.setButtonLoading(submitBtn, false);
       }

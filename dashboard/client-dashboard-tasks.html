@@ -147,7 +147,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (selectedProject) {
     const projectTasks = tasks.filter((t) => t.projectId === selectedProject.projectId);
     const progress = BXCore.computeProjectProgress(projectTasks);
-    const progressLabel = progress === 0 ? "—" : `${progress}%`;
+    const progressLabel = progress === 0 ? "--" : `${progress}%`;
     const progressHelper = progress === 0 ? "No tasks yet" : "";
     headerEl.innerHTML = `
       <section class="subpanel">
@@ -236,7 +236,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     section.innerHTML = `
       <header class="client-task-group-header">
         <h3>${group.label}</h3>
-        <span class="badge ${group.key}">${groupTasks.length || "—"}</span>
+        <span class="badge ${group.key}">${groupTasks.length}</span>
       </header>
     `;
 
