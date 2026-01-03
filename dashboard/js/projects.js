@@ -14,6 +14,35 @@ document.addEventListener("DOMContentLoaded", async () => {
   const addProjectPanel = document.getElementById("addProjectPanel");
   const openAddProjectInline = document.getElementById("openAddProjectInline");
   const cancelAddProjectBtn = document.getElementById("cancelAddProject");
+  const quickTaskModal = document.getElementById("quickTaskModal");
+  const quickTaskMeta = document.getElementById("quickTaskMeta");
+  const quickTaskForm = document.getElementById("quickTaskForm");
+  const quickTaskProjectId = document.getElementById("quickTaskProjectId");
+  const quickTaskTitle = document.getElementById("quickTaskTitle");
+  const quickTaskDescription = document.getElementById("quickTaskDescription");
+  const quickTaskStatus = document.getElementById("quickTaskStatus");
+  const quickTaskProgress = document.getElementById("quickTaskProgress");
+  const quickTaskDueDate = document.getElementById("quickTaskDueDate");
+  const quickDeliverableModal = document.getElementById("quickDeliverableModal");
+  const quickDeliverableMeta = document.getElementById("quickDeliverableMeta");
+  const quickDeliverableForm = document.getElementById("quickDeliverableForm");
+  const quickDeliverableProjectId = document.getElementById("quickDeliverableProjectId");
+  const quickDeliverableClientId = document.getElementById("quickDeliverableClientId");
+  const quickDeliverableName = document.getElementById("quickDeliverableName");
+  const quickDeliverableStatus = document.getElementById("quickDeliverableStatus");
+  const quickDeliverableCover = document.getElementById("quickDeliverableCover");
+  const quickDeliverableDescription = document.getElementById("quickDeliverableDescription");
+  const quickDeliverableLink = document.getElementById("quickDeliverableLink");
+  const quickDeliverableVisible = document.getElementById("quickDeliverableVisible");
+  const projectEditModal = document.getElementById("projectEditModal");
+  const projectEditMeta = document.getElementById("projectEditMeta");
+  const projectEditForm = document.getElementById("projectEditForm");
+  const projectEditName = document.getElementById("projectEditName");
+  const projectEditDescription = document.getElementById("projectEditDescription");
+  const projectEditStatus = document.getElementById("projectEditStatus");
+  const projectEditClient = document.getElementById("projectEditClient");
+  const projectEditDrive = document.getElementById("projectEditDrive");
+  const projectEditDelete = document.getElementById("projectEditDelete");
 
   const showActionStatus = (message, type = "success") => {
     if (!actionStatusEl) return;
@@ -45,6 +74,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   let projects = data.projects || [];
   let tasks = data.tasks || [];
   let projectActionsBound = false;
+  let currentEditProject = null;
+  let currentQuickProject = null;
 
   const openAddProject = () => {
     if (!addProjectPanel) return;
@@ -56,7 +87,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function populateClientSelects() {
     clientFilterSelect.innerHTML = '<option value="all">All clients</option>';
-    addProjectClientSelect.innerHTML = "";
+    addProjectClientSelect.innerHTML = '<option value="">Select client</option>';
 
     clients.forEach((c) => {
       const opt1 = document.createElement("option");
@@ -67,6 +98,103 @@ document.addEventListener("DOMContentLoaded", async () => {
       const opt2 = opt1.cloneNode(true);
       addProjectClientSelect.appendChild(opt2);
     });
+  }
+
+  function buildClientOptions(selectedId) {
+    return clients
+      .map(
+        (c) =>
+          `<option value="${c.clientId}" ${c.clientId === selectedId ? "selected" : ""}>${
+            c.clientName || c.username || c.clientId
+          }</option>`
+      )
+      .join("");
+  }
+
+  function openProjectModal(project) {
+    if (!projectEditModal || !projectEditForm) return;
+    currentEditProject = project;
+    const client = clients.find((c) => c.clientId === project.clientId);
+    if (projectEditMeta) {
+      projectEditMeta.textContent = client?.clientName || client?.username || "Unknown client";
+    }
+    if (projectEditName) projectEditName.value = project.name || "";
+    if (projectEditDescription) projectEditDescription.value = project.description || "";
+    if (projectEditStatus) projectEditStatus.value = project.status || "not-started";
+    if (projectEditClient) projectEditClient.innerHTML = buildClientOptions(project.clientId);
+    if (projectEditDrive) projectEditDrive.value = project.driveLink || "";
+
+    projectEditModal.classList.add("is-open");
+    projectEditModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+  }
+
+  function closeProjectModal() {
+    if (!projectEditModal) return;
+    projectEditModal.classList.remove("is-open");
+    projectEditModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    currentEditProject = null;
+  }
+
+  function openQuickTaskModal(project) {
+    if (!quickTaskModal || !quickTaskForm) return;
+    currentQuickProject = project;
+    const client = clients.find((c) => c.clientId === project.clientId);
+    if (quickTaskMeta) {
+      const projectLabel = project?.name || "Unknown project";
+      const clientLabel = client?.clientName || client?.username || "Unknown client";
+      quickTaskMeta.textContent = `${projectLabel} \u2022 ${clientLabel}`;
+    }
+    if (quickTaskProjectId) quickTaskProjectId.value = project.projectId;
+    if (quickTaskTitle) quickTaskTitle.value = "";
+    if (quickTaskDescription) quickTaskDescription.value = "";
+    if (quickTaskStatus) quickTaskStatus.value = "not-started";
+    if (quickTaskProgress) quickTaskProgress.value = 0;
+    if (quickTaskDueDate) quickTaskDueDate.value = "";
+
+    quickTaskModal.classList.add("is-open");
+    quickTaskModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+  }
+
+  function closeQuickTaskModal() {
+    if (!quickTaskModal) return;
+    quickTaskModal.classList.remove("is-open");
+    quickTaskModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    currentQuickProject = null;
+  }
+
+  function openQuickDeliverableModal(project) {
+    if (!quickDeliverableModal || !quickDeliverableForm) return;
+    currentQuickProject = project;
+    const client = clients.find((c) => c.clientId === project.clientId);
+    if (quickDeliverableMeta) {
+      const projectLabel = project?.name || "Unknown project";
+      const clientLabel = client?.clientName || client?.username || "Unknown client";
+      quickDeliverableMeta.textContent = `${projectLabel} \u2022 ${clientLabel}`;
+    }
+    if (quickDeliverableProjectId) quickDeliverableProjectId.value = project.projectId;
+    if (quickDeliverableClientId) quickDeliverableClientId.value = project.clientId;
+    if (quickDeliverableName) quickDeliverableName.value = "";
+    if (quickDeliverableStatus) quickDeliverableStatus.value = "not-started";
+    if (quickDeliverableCover) quickDeliverableCover.value = "";
+    if (quickDeliverableDescription) quickDeliverableDescription.value = "";
+    if (quickDeliverableLink) quickDeliverableLink.value = "";
+    if (quickDeliverableVisible) quickDeliverableVisible.checked = false;
+
+    quickDeliverableModal.classList.add("is-open");
+    quickDeliverableModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+  }
+
+  function closeQuickDeliverableModal() {
+    if (!quickDeliverableModal) return;
+    quickDeliverableModal.classList.remove("is-open");
+    quickDeliverableModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    currentQuickProject = null;
   }
 
   function renderProjects() {
@@ -121,15 +249,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       const pTasks = tasks.filter((t) => t.projectId === p.projectId);
       const progress = BXCore.computeProjectProgress(pTasks);
       const client = clients.find((c) => c.clientId === p.clientId);
-      const clientOptions = clients
-        .map(
-          (c) =>
-            `<option value="${c.clientId}" ${c.clientId === p.clientId ? "selected" : ""}>${
-              c.clientName || c.username || c.clientId
-            }</option>`
-        )
-        .join("");
-
       const card = document.createElement("article");
       card.className = "project-card";
       card.dataset.projectId = p.projectId;
@@ -147,8 +266,7 @@ document.addEventListener("DOMContentLoaded", async () => {
               ${(p.status || "in-progress").replace("-", " ")}
             </span>
             <div class="project-actions">
-              <button class="btn-secondary btn-compact project-edit-toggle" type="button">Edit</button>
-              <button class="btn-danger btn-compact project-delete" type="button"><i class="fas fa-trash"></i></button>
+              <button class="btn-secondary btn-compact project-edit-open" type="button">Edit</button>
             </div>
           </div>
         </header>
@@ -174,44 +292,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             <i class="fas fa-box-open"></i> Add deliverable
           </button>
         </div>
-        <div class="project-edit" aria-hidden="true">
-          <div class="project-edit-title">Edit project</div>
-          <div class="project-edit-grid">
-            <div class="form-row">
-              <label>Name</label>
-              <input class="admin-project-name" value="${p.name || ""}" />
-            </div>
-            <div class="form-row">
-              <label>Description</label>
-              <textarea class="admin-project-desc" rows="2">${p.description || ""}</textarea>
-            </div>
-            <div class="form-row">
-              <label>Status</label>
-              <select class="admin-project-status">
-                <option value="not-started" ${p.status === "not-started" ? "selected" : ""}>Not started</option>
-                <option value="in-progress" ${p.status === "in-progress" ? "selected" : ""}>In progress</option>
-                <option value="completed" ${p.status === "completed" ? "selected" : ""}>Completed</option>
-                <option value="blocked" ${p.status === "blocked" ? "selected" : ""}>Blocked</option>
-              </select>
-            </div>
-            <div class="form-row">
-              <label>Client</label>
-              <select class="admin-project-client">
-                ${clientOptions}
-              </select>
-            </div>
-            <div class="form-row">
-              <label>Drive link</label>
-              <input class="admin-project-drive" type="url" value="${p.driveLink || ""}" placeholder="https://drive.google.com/..." />
-            </div>
-          </div>
-          <div class="project-edit-actions">
-            <div style="flex:1"></div>
-            <div class="project-actions">
-              <button class="btn-secondary admin-project-save" type="button">Save changes</button>
-            </div>
-          </div>
-        </div>
       `;
       projectsList.appendChild(card);
     });
@@ -225,111 +305,257 @@ document.addEventListener("DOMContentLoaded", async () => {
           const card = e.target.closest(".project-card");
           if (!card) return;
           const projectId = card.dataset.projectId;
+          const project = projects.find((item) => item.projectId === projectId);
+          if (!project) return;
           if (quickTaskBtn) {
-            window.location.href = `dashboard-tasks.html?projectId=${encodeURIComponent(projectId)}`;
+            openQuickTaskModal(project);
           } else {
-            window.location.href = `dashboard-deliverables.html?projectId=${encodeURIComponent(projectId)}`;
+            openQuickDeliverableModal(project);
           }
           return;
         }
 
-        const toggleBtn = e.target.closest(".project-edit-toggle");
-        if (toggleBtn) {
-          const card = toggleBtn.closest(".project-card");
-          if (!card) return;
-          const isOpen = card.classList.toggle("is-editing");
-          toggleBtn.textContent = isOpen ? "Close" : "Edit";
-          const editPanel = card.querySelector(".project-edit");
-          if (editPanel) editPanel.setAttribute("aria-hidden", isOpen ? "false" : "true");
-          return;
-        }
-
-        const saveBtn = e.target.closest(".admin-project-save");
-        const deleteBtn = e.target.closest(".admin-project-delete") || e.target.closest(".project-delete");
-        if (!saveBtn && !deleteBtn) return;
-        const card = e.target.closest(".project-card");
+        const openBtn = e.target.closest(".project-edit-open");
+        if (!openBtn) return;
+        const card = openBtn.closest(".project-card");
         if (!card) return;
         const projectId = card.dataset.projectId;
-        const nameInput = card.querySelector(".admin-project-name");
-        const descInput = card.querySelector(".admin-project-desc");
-        const statusSelect = card.querySelector(".admin-project-status");
-        const clientSelectEl = card.querySelector(".admin-project-client");
-        const driveInput = card.querySelector(".admin-project-drive");
-
-        if (deleteBtn) {
-          const confirmDelete = await BXCore.confirmAction({
-            title: "Delete project?",
-            message: "This will delete the project and all related tasks, deliverables, and updates.",
-            confirmLabel: "Delete project",
-            tone: "danger",
-          });
-          if (!confirmDelete) return;
-          BXCore.setButtonLoading(deleteBtn, true, "Deleting...");
-          try {
-            const resp = await BXCore.apiPost({
-              action: "deleteProject",
-              projectId,
-            });
-            if (!resp.ok) throw new Error(resp.error || "Delete failed");
-            data = await BXCore.apiGetAll(true);
-            BXCore.updateSidebarStats(data);
-            clients = data.clients || [];
-            projects = data.projects || [];
-            tasks = data.tasks || [];
-            renderProjects();
-            showActionStatus("Project deleted.", "success");
-          } catch (err) {
-            console.error(err);
-            showActionStatus("Couldn't delete the project. Please try again.", "error");
-          } finally {
-            BXCore.setButtonLoading(deleteBtn, false);
-          }
-          return;
-        }
-
-        if (!nameInput.value.trim()) {
-          showActionStatus("Project name is required.", "error");
-          return;
-        }
-
-        BXCore.setButtonLoading(saveBtn, true, "Saving...");
-        const nextName = nameInput.value.trim();
-        const nextDescription = descInput.value.trim();
-        const nextStatus = statusSelect.value;
-        const nextDriveLink = driveInput.value.trim();
-        try {
-          const resp = await BXCore.apiPost({
-            action: "updateProject",
-            projectId,
-            name: nextName,
-            projectName: nextName,
-            title: nextName,
-            description: nextDescription,
-            status: nextStatus,
-            clientId: clientSelectEl ? clientSelectEl.value : null,
-            driveLink: nextDriveLink,
-            updatedAt: new Date().toISOString(),
-          });
-          if (!resp.ok) throw new Error(resp.error || "Update failed");
-          data = await BXCore.apiGetAll(true);
-          BXCore.updateSidebarStats(data);
-          clients = data.clients || [];
-          projects = data.projects || [];
-          tasks = data.tasks || [];
-          renderProjects();
-          showActionStatus("Project updated successfully.", "success");
-        } catch (err) {
-          console.error(err);
-          showActionStatus("Couldn't update the project. Please try again.", "error");
-        } finally {
-          BXCore.setButtonLoading(saveBtn, false);
-        }
+        const project = projects.find((item) => item.projectId === projectId);
+        if (project) openProjectModal(project);
       });
     }
   }
 
   clientFilterSelect.addEventListener("change", renderProjects);
   statusFilter.addEventListener("change", renderProjects);
+
+  if (quickTaskModal) {
+    quickTaskModal.addEventListener("click", (e) => {
+      if (e.target.closest("[data-modal-close]")) {
+        closeQuickTaskModal();
+      }
+    });
+  }
+
+  if (quickDeliverableModal) {
+    quickDeliverableModal.addEventListener("click", (e) => {
+      if (e.target.closest("[data-modal-close]")) {
+        closeQuickDeliverableModal();
+      }
+    });
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && quickTaskModal?.classList.contains("is-open")) {
+      closeQuickTaskModal();
+    }
+    if (e.key === "Escape" && quickDeliverableModal?.classList.contains("is-open")) {
+      closeQuickDeliverableModal();
+    }
+  });
+
+  if (quickTaskForm) {
+    quickTaskForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!currentQuickProject) return;
+      const submitBtn = quickTaskForm.querySelector("button[type=\"submit\"]");
+      const title = quickTaskTitle ? quickTaskTitle.value.trim() : "";
+      if (!title) {
+        showActionStatus("Task title is required.", "error");
+        return;
+      }
+      const description = quickTaskDescription ? quickTaskDescription.value.trim() : "";
+      const status = quickTaskStatus ? quickTaskStatus.value : "not-started";
+      const progress = quickTaskProgress ? Number(quickTaskProgress.value || 0) : 0;
+      const dueDate =
+        quickTaskDueDate && quickTaskDueDate.value ? quickTaskDueDate.value : null;
+
+      BXCore.setButtonLoading(submitBtn, true, "Saving...");
+      const taskId = "task_" + Date.now();
+      try {
+        const resp = await BXCore.apiPost({
+          action: "addTask",
+          taskId,
+          projectId: currentQuickProject.projectId,
+          title,
+          description,
+          status,
+          progress: Number.isFinite(progress) ? progress : 0,
+          dueDate,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+        if (!resp.ok) throw new Error(resp.error || "Create failed");
+        data = await BXCore.apiGetAll(true);
+        BXCore.updateSidebarStats(data);
+        clients = data.clients || [];
+        projects = data.projects || [];
+        tasks = data.tasks || [];
+        closeQuickTaskModal();
+        renderProjects();
+        showActionStatus("Task added successfully.", "success");
+      } catch (err) {
+        console.error(err);
+        showActionStatus("Couldn't save the task. Please try again.", "error");
+      } finally {
+        BXCore.setButtonLoading(submitBtn, false);
+      }
+    });
+  }
+
+  if (quickDeliverableForm) {
+    const allowedStatuses = ["not-started", "in-progress", "ready", "delivered", "approved", "archived"];
+    quickDeliverableForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!currentQuickProject) return;
+      const submitBtn = quickDeliverableForm.querySelector("button[type=\"submit\"]");
+      const name = quickDeliverableName ? quickDeliverableName.value.trim() : "";
+      if (!name) {
+        showActionStatus("Deliverable name is required.", "error");
+        return;
+      }
+      const status = quickDeliverableStatus ? quickDeliverableStatus.value : "not-started";
+      const normalizedStatus = allowedStatuses.includes(status) ? status : "not-started";
+      const coverImage = quickDeliverableCover ? quickDeliverableCover.value.trim() : "";
+      const description = quickDeliverableDescription ? quickDeliverableDescription.value.trim() : "";
+      const deliveryLink = quickDeliverableLink ? quickDeliverableLink.value.trim() : "";
+      const visibleToClient = quickDeliverableVisible ? quickDeliverableVisible.checked : false;
+
+      BXCore.setButtonLoading(submitBtn, true, "Saving...");
+      const deliverableId = "deliverable_" + Date.now();
+      try {
+        const resp = await BXCore.apiPost({
+          action: "addDeliverable",
+          deliverableId,
+          clientId: currentQuickProject.clientId,
+          projectId: currentQuickProject.projectId,
+          projectName: currentQuickProject.name || currentQuickProject.projectId,
+          name,
+          status: normalizedStatus,
+          coverImage,
+          coverPhoto: coverImage,
+          coverUrl: coverImage,
+          description,
+          deliveryLink,
+          downloadLink: deliveryLink,
+          previewLink: deliveryLink,
+          driveLink: deliveryLink,
+          visibleToClient,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+        if (!resp.ok) throw new Error(resp.error || "Create failed");
+        data = await BXCore.apiGetAll(true);
+        BXCore.updateSidebarStats(data);
+        clients = data.clients || [];
+        projects = data.projects || [];
+        tasks = data.tasks || [];
+        closeQuickDeliverableModal();
+        renderProjects();
+        showActionStatus("Deliverable added successfully.", "success");
+      } catch (err) {
+        console.error(err);
+        showActionStatus("Couldn't save the deliverable. Please try again.", "error");
+      } finally {
+        BXCore.setButtonLoading(submitBtn, false);
+      }
+    });
+  }
+
+  if (projectEditModal) {
+    projectEditModal.addEventListener("click", (e) => {
+      if (e.target.closest("[data-modal-close]")) {
+        closeProjectModal();
+      }
+    });
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && projectEditModal?.classList.contains("is-open")) {
+      closeProjectModal();
+    }
+  });
+
+  if (projectEditDelete) {
+    projectEditDelete.addEventListener("click", async () => {
+      if (!currentEditProject) return;
+      const confirmDelete = await BXCore.confirmAction({
+        title: "Delete project?",
+        message: "This will delete the project and all related tasks, deliverables, and updates.",
+        confirmLabel: "Delete project",
+        tone: "danger",
+      });
+      if (!confirmDelete) return;
+      BXCore.setButtonLoading(projectEditDelete, true, "Deleting...");
+      try {
+        const resp = await BXCore.apiPost({
+          action: "deleteProject",
+          projectId: currentEditProject.projectId,
+        });
+        if (!resp.ok) throw new Error(resp.error || "Delete failed");
+        data = await BXCore.apiGetAll(true);
+        BXCore.updateSidebarStats(data);
+        clients = data.clients || [];
+        projects = data.projects || [];
+        tasks = data.tasks || [];
+        closeProjectModal();
+        renderProjects();
+        showActionStatus("Project deleted.", "success");
+      } catch (err) {
+        console.error(err);
+        showActionStatus("Couldn't delete the project. Please try again.", "error");
+      } finally {
+        BXCore.setButtonLoading(projectEditDelete, false);
+      }
+    });
+  }
+
+  if (projectEditForm) {
+    projectEditForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!currentEditProject) return;
+      const submitBtn = projectEditForm.querySelector("button[type=\"submit\"]");
+      const nextName = projectEditName ? projectEditName.value.trim() : "";
+      if (!nextName) {
+        showActionStatus("Project name is required.", "error");
+        return;
+      }
+      const nextDescription = projectEditDescription ? projectEditDescription.value.trim() : "";
+      const nextStatus = projectEditStatus ? projectEditStatus.value : "not-started";
+      const nextClientId = projectEditClient ? projectEditClient.value : currentEditProject.clientId;
+      const nextDriveLink = projectEditDrive ? projectEditDrive.value.trim() : "";
+
+      BXCore.setButtonLoading(submitBtn, true, "Saving...");
+      try {
+        const resp = await BXCore.apiPost({
+          action: "updateProject",
+          projectId: currentEditProject.projectId,
+          name: nextName,
+          projectName: nextName,
+          title: nextName,
+          description: nextDescription,
+          status: nextStatus,
+          clientId: nextClientId,
+          driveLink: nextDriveLink,
+          updatedAt: new Date().toISOString(),
+        });
+        if (!resp.ok) throw new Error(resp.error || "Update failed");
+        data = await BXCore.apiGetAll(true);
+        BXCore.updateSidebarStats(data);
+        clients = data.clients || [];
+        projects = data.projects || [];
+        tasks = data.tasks || [];
+        closeProjectModal();
+        renderProjects();
+        showActionStatus("Project updated successfully.", "success");
+      } catch (err) {
+        console.error(err);
+        showActionStatus("Couldn't update the project. Please try again.", "error");
+      } finally {
+        BXCore.setButtonLoading(submitBtn, false);
+      }
+    });
+  }
 
   if (toggleAddProjectBtn && addProjectPanel) {
     toggleAddProjectBtn.addEventListener("click", () => {

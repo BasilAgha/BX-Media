@@ -52,7 +52,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     }, 2200);
   };
 
-  const ALLOWED_DELIVERABLE_STATUSES = ["in-progress", "ready", "delivered", "approved", "archived"];
+  const ALLOWED_DELIVERABLE_STATUSES = [
+    "not-started",
+    "in-progress",
+    "ready",
+    "delivered",
+    "approved",
+    "archived",
+  ];
 
   const showEditStatus = (message, type = "success") => {
     if (!editStatusEl) return;
@@ -135,8 +142,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     selectEl.innerHTML = "";
     if (placeholder) {
       const opt = document.createElement("option");
-      opt.value = "all";
-      opt.textContent = placeholder;
+      if (typeof placeholder === "string") {
+        opt.value = "all";
+        opt.textContent = placeholder;
+      } else {
+        opt.value = placeholder.value ?? "all";
+        opt.textContent = placeholder.label ?? "";
+      }
       selectEl.appendChild(opt);
     }
     options.forEach((item) => {
@@ -152,21 +164,41 @@ document.addEventListener("DOMContentLoaded", async () => {
       value: c.clientId,
       label: c.clientName || c.username || c.clientId,
     }));
-    buildSelectOptions(clientSelect, options, "All clients");
-    buildSelectOptions(addClientSelect, options);
-    buildSelectOptions(editClientSelect, options);
+    buildSelectOptions(clientSelect, options, { value: "all", label: "All clients" });
+    buildSelectOptions(addClientSelect, options, { value: "", label: "Select client" });
+    buildSelectOptions(editClientSelect, options, { value: "", label: "Select client" });
   };
 
-  const populateProjectSelect = (selectEl, clientId, placeholder, selectedValue) => {
-    const visibleProjects = getProjectsForClient(clientId);
-    const options = visibleProjects.map((p) => ({
+  const populateProjectSelect = (selectEl, clientId, placeholder, selectedValue, options = {}) => {
+    const allowAll = options.allowAll !== false;
+    let visibleProjects = getProjectsForClient(clientId);
+    if (!allowAll && (!clientId || clientId === "all")) {
+      visibleProjects = [];
+    }
+    const projectOptions = visibleProjects.map((p) => ({
       value: p.projectId,
       label: p.name || p.projectId,
     }));
-    buildSelectOptions(selectEl, options, placeholder);
+    buildSelectOptions(selectEl, projectOptions, placeholder);
+    if (selectEl) {
+      const shouldDisable = !allowAll && (!clientId || clientId === "all" || !visibleProjects.length);
+      selectEl.disabled = shouldDisable;
+    }
     if (selectedValue) {
       selectEl.value = selectedValue;
     }
+  };
+
+  const updateAddProjectSelect = (selectedProjectId) => {
+    const clientId = addClientSelect ? addClientSelect.value : "";
+    const label = clientId ? "Select project" : "Select client first";
+    populateProjectSelect(addProjectSelect, clientId, { value: "", label }, selectedProjectId, { allowAll: false });
+  };
+
+  const updateEditProjectSelect = (selectedProjectId) => {
+    const clientId = editClientSelect ? editClientSelect.value : "";
+    const label = clientId ? "Select project" : "Select client first";
+    populateProjectSelect(editProjectSelect, clientId, { value: "", label }, selectedProjectId, { allowAll: false });
   };
 
   const ensureProjectClientMatch = (projectId, clientId) => {
@@ -178,7 +210,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const normalizeStatus = (status) => {
     const val = String(status || "").trim().toLowerCase();
-    return ALLOWED_DELIVERABLE_STATUSES.includes(val) ? val : "in-progress";
+    return ALLOWED_DELIVERABLE_STATUSES.includes(val) ? val : "not-started";
   };
 
   const openModal = (deliverable) => {
@@ -235,7 +267,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         editVisibleInput.checked = deliverable.visibleToClient === true || String(deliverable.visibleToClient) === "true";
       }
       editClientSelect.value = clientId || "";
-      populateProjectSelect(editProjectSelect, clientId, null, deliverable.projectId);
+          updateEditProjectSelect(deliverable.projectId);
     }
 
     modal.classList.add("is-open");
@@ -329,7 +361,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       .forEach((d) => {
         const project = getProject(d.projectId);
         const clientId = d.clientId || project?.clientId;
-        const statusValue = d.status || "in-progress";
+        const statusValue = d.status || "not-started";
         const card = document.createElement("article");
         card.className = "deliverable-card";
         card.dataset.deliverableId = d.deliverableId;
@@ -390,8 +422,8 @@ document.addEventListener("DOMContentLoaded", async () => {
           projects = data.projects || [];
           deliverables = data.deliverables || [];
           populateClientSelects();
-          populateProjectSelect(projectSelect, clientSelect.value, "All projects");
-          populateProjectSelect(addProjectSelect, addClientSelect.value, null);
+          populateProjectSelect(projectSelect, clientSelect.value, { value: "all", label: "All projects" });
+          updateAddProjectSelect();
           renderDeliverables();
           showActionStatus("Deliverable deleted. The list is up to date.", "success");
         } catch (err) {
@@ -408,7 +440,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   clientSelect.addEventListener("change", () => {
-    populateProjectSelect(projectSelect, clientSelect.value, "All projects");
+    populateProjectSelect(projectSelect, clientSelect.value, { value: "all", label: "All projects" });
     renderDeliverables();
   });
 
@@ -416,11 +448,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   statusFilter.addEventListener("change", renderDeliverables);
 
   addClientSelect.addEventListener("change", () => {
-    populateProjectSelect(addProjectSelect, addClientSelect.value, null);
+    updateAddProjectSelect();
   });
 
   editClientSelect.addEventListener("change", () => {
-    populateProjectSelect(editProjectSelect, editClientSelect.value, null);
+    updateEditProjectSelect();
   });
 
   addForm.addEventListener("submit", async (e) => {
@@ -473,6 +505,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
       if (!resp.ok) throw new Error(resp.error || "Create failed");
       addForm.reset();
+      updateAddProjectSelect();
       if (addCoverUrlInput) addCoverUrlInput.value = "";
       if (addVisibleInput) addVisibleInput.checked = false;
       if (addStatusEl) {
@@ -487,8 +520,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       projects = data.projects || [];
       deliverables = data.deliverables || [];
       populateClientSelects();
-      populateProjectSelect(projectSelect, clientSelect.value, "All projects");
-      populateProjectSelect(addProjectSelect, addClientSelect.value, null);
+      populateProjectSelect(projectSelect, clientSelect.value, { value: "all", label: "All projects" });
+      updateAddProjectSelect();
       renderDeliverables();
     } catch (err) {
       console.error(err);
@@ -548,8 +581,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       projects = data.projects || [];
       deliverables = data.deliverables || [];
       populateClientSelects();
-      populateProjectSelect(projectSelect, clientSelect.value, "All projects");
-      populateProjectSelect(addProjectSelect, addClientSelect.value, null);
+      populateProjectSelect(projectSelect, clientSelect.value, { value: "all", label: "All projects" });
+      updateAddProjectSelect();
       renderDeliverables();
       showEditStatus("Deliverable updated successfully.", "success");
       closeModal();
@@ -563,14 +596,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   populateClientSelects();
-  populateProjectSelect(projectSelect, clientSelect.value, "All projects");
-  populateProjectSelect(addProjectSelect, addClientSelect.value, null);
+  populateProjectSelect(projectSelect, clientSelect.value, { value: "all", label: "All projects" });
+  updateAddProjectSelect();
 
   if (quickProjectId) {
     const quickProject = projects.find((p) => p.projectId === quickProjectId);
     if (quickProject) {
       addClientSelect.value = quickProject.clientId;
-      populateProjectSelect(addProjectSelect, quickProject.clientId, null, quickProjectId);
+      updateAddProjectSelect(quickProjectId);
       if (addDeliverablePanel) {
         addDeliverablePanel.classList.remove("is-collapsed");
         addDeliverablePanel.setAttribute("aria-hidden", "false");

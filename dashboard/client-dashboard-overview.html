@@ -90,5 +90,11 @@
 <script src="js/supabase-client.js"></script>
 <script src="js/dashboard-core.js"></script>
 <script src="js/overview.js"></script>
+<script>
+setInterval(() => {
+  if (document.visibilityState !== "visible") return;
+  window.location.reload();
+}, 20000);
+</script>
 </body>
 </html>

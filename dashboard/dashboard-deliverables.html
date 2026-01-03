@@ -71,6 +71,7 @@
                 <label>Status</label>
                 <select id="deliverablesStatusFilter">
                   <option value="all">All</option>
+                  <option value="not-started" selected>Not started</option>
                   <option value="in-progress">In progress</option>
                   <option value="ready">Ready</option>
                   <option value="delivered">Delivered</option>
@@ -104,7 +105,8 @@
                   <div class="form-row">
                     <label>Status</label>
                     <select name="status">
-                      <option value="in-progress" selected>In progress</option>
+                      <option value="not-started" selected>Not started</option>
+                      <option value="in-progress">In progress</option>
                       <option value="ready">Ready</option>
                       <option value="delivered">Delivered</option>
                       <option value="approved">Approved</option>
@@ -198,12 +200,13 @@
             <input id="editDeliverableName" name="name" required />
           </div>
           <div class="form-row">
-            <label>Status</label>
-            <select id="editDeliverableStatus" name="status">
-              <option value="in-progress">In progress</option>
-              <option value="ready">Ready</option>
-              <option value="delivered">Delivered</option>
-              <option value="approved">Approved</option>
+                    <label>Status</label>
+                    <select id="editDeliverableStatus" name="status">
+                      <option value="not-started">Not started</option>
+                      <option value="in-progress">In progress</option>
+                      <option value="ready">Ready</option>
+                      <option value="delivered">Delivered</option>
+                      <option value="approved">Approved</option>
               <option value="archived">Archived</option>
             </select>
           </div>

@@ -3,6 +3,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!sess) return;
 
   const deliverablesGrid = document.getElementById("deliverablesGrid");
+  const projectFilterSelect = document.getElementById("deliverablesProjectFilter");
   const modal = document.getElementById("deliverableModal");
   const modalTitle = document.getElementById("deliverableModalTitle");
   const modalProject = document.getElementById("deliverableModalProject");
@@ -62,6 +63,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   const projects = data.projects || [];
   const deliverables = data.deliverables || [];
 
+  const visibleDeliverables = deliverables.filter((d) => {
+    if (d?.visibleToClient === undefined || d?.visibleToClient === null) return true;
+    if (typeof d.visibleToClient === "string") return d.visibleToClient.toLowerCase() === "true";
+    return d.visibleToClient === true;
+  });
+
   const getProjectName = (projectId) => {
     const project = projects.find((p) => p.projectId === projectId);
     return project?.name || "Project";
@@ -95,25 +102,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     modalLinks.innerHTML = "";
     const linkItems = [
+      { label: "Delivery", url: deliverable.deliveryLink, icon: "fa-link" },
       { label: "Drive", url: deliverable.driveLink, icon: "fa-google-drive" },
       { label: "Preview", url: deliverable.previewLink, icon: "fa-eye" },
       { label: "Download", url: deliverable.downloadLink, icon: "fa-download" },
     ];
     linkItems.forEach((item) => {
-      if (item.url) {
-        const link = document.createElement("a");
-        link.className = "modal-link";
-        link.href = item.url;
-        link.target = "_blank";
-        link.rel = "noopener";
-        link.innerHTML = `<i class="fas ${item.icon}"></i> ${item.label}`;
-        modalLinks.appendChild(link);
-      } else {
-        const empty = document.createElement("div");
-        empty.className = "modal-link is-empty";
-        empty.innerHTML = `<i class="fas ${item.icon}"></i> ${item.label} not available`;
-        modalLinks.appendChild(empty);
-      }
+      if (!item.url) return;
+      const link = document.createElement("a");
+      link.className = "modal-link";
+      link.href = item.url;
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.innerHTML = `<i class="fas ${item.icon}"></i> ${item.label}`;
+      modalLinks.appendChild(link);
     });
 
     modal.classList.add("is-open");
@@ -139,7 +141,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  if (!deliverables.length) {
+  if (!visibleDeliverables.length) {
     deliverablesGrid.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon"><i class="fas fa-box-open"></i></div>
@@ -153,8 +155,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  deliverablesGrid.innerHTML = "";
-  deliverables
+  const renderDeliverables = (items) => {
+    deliverablesGrid.innerHTML = "";
+    items
     .slice()
     .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))
     .forEach((d) => {
@@ -178,13 +181,48 @@ document.addEventListener("DOMContentLoaded", async () => {
       `;
       deliverablesGrid.appendChild(card);
     });
+  };
+
+  const populateProjectFilter = () => {
+    if (!projectFilterSelect) return;
+    projectFilterSelect.innerHTML = "";
+    const allOpt = document.createElement("option");
+    allOpt.value = "all";
+    allOpt.textContent = "All projects";
+    projectFilterSelect.appendChild(allOpt);
+    projects.forEach((p) => {
+      const opt = document.createElement("option");
+      opt.value = p.projectId;
+      opt.textContent = p.name || p.projectId;
+      projectFilterSelect.appendChild(opt);
+    });
+  };
+
+  populateProjectFilter();
+  renderDeliverables(visibleDeliverables);
+
+  if (projectFilterSelect) {
+    projectFilterSelect.addEventListener("change", () => {
+      const selected = projectFilterSelect.value;
+      const nextList =
+        selected === "all"
+          ? visibleDeliverables
+          : visibleDeliverables.filter((d) => d.projectId === selected);
+      renderDeliverables(nextList);
+    });
+  }
 
   deliverablesGrid.addEventListener("click", (e) => {
     const card = e.target.closest(".deliverable-card");
     if (!card) return;
     const deliverableId = card.dataset.deliverableId;
-    const deliverable = deliverables.find((d) => d.deliverableId === deliverableId);
+    const deliverable = visibleDeliverables.find((d) => d.deliverableId === deliverableId);
     if (!deliverable) return;
     openModal(deliverable);
   });
+
+  setInterval(() => {
+    if (document.visibilityState !== "visible") return;
+    window.location.reload();
+  }, 20000);
 });

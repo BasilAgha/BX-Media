@@ -125,25 +125,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  const typeFromText = (text) => {
-    const value = (text || "").toLowerCase();
-    if (value.includes("video")) return "Video";
-    if (value.includes("photo")) return "Photo";
-    if (value.includes("design")) return "Design";
-    return "Design";
-  };
-
-  const getProjectType = (project) => {
-    const raw = project.type || project.projectType || project.category || "";
-    return typeFromText(raw || project.name || project.description);
-  };
-
   const list = document.createElement("div");
   list.className = "project-rows";
   list.innerHTML = `
     <div class="project-row header">
       <div>Project</div>
-      <div>Type</div>
       <div>Status</div>
       <div>Progress</div>
       <div>Deadline</div>
@@ -156,7 +142,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const progress = BXCore.computeProjectProgress(taskList);
     const updatedLabel = BXCore.formatDateTime(p.updatedAt || p.createdAt) || "Not updated yet";
     const statusValue = p.status || "in-progress";
-    const projectType = getProjectType(p);
     const deadlineRaw = p.deadline || p.dueDate || p.targetDate || p.deliveryDate || "";
     const deadlineLabel = deadlineRaw ? BXCore.formatDate(deadlineRaw) : "TBD";
 
@@ -169,9 +154,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       <div class="project-cell" data-label="Project">
         <div class="project-title">${p.name || "Untitled project"}</div>
         <div class="project-sub">Updated: ${updatedLabel}</div>
-      </div>
-      <div class="project-cell" data-label="Type">
-        <span class="type-pill">${projectType}</span>
       </div>
       <div class="project-cell" data-label="Status">
         <span class="badge ${statusValue}">${statusValue.replace("-", " ")}</span>
@@ -198,6 +180,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     BXCore.showPageLoader("Loading project tasks...");
     window.location.href = row.dataset.href;
   });
+
+  setInterval(() => {
+    if (document.visibilityState !== "visible") return;
+    window.location.reload();
+  }, 20000);
 });
 </script>
 

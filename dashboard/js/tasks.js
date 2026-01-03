@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const projectSelect = document.getElementById("tasksProjectSelect");
   const statusFilter = document.getElementById("tasksStatusFilter");
   const addTaskProjectSelect = document.getElementById("addTaskProjectSelect");
+  const addTaskClientSelect = document.getElementById("addTaskClientSelect");
   const addTaskStatus = document.getElementById("addTaskStatus");
   const tasksTableWrapper = document.getElementById("tasksTableWrapper");
   const actionStatusEl = document.getElementById("tasksActionStatus");
@@ -17,6 +18,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   const addTaskPanel = document.getElementById("addTaskPanel");
   const openAddTaskInline = document.getElementById("openAddTaskInline");
   const cancelAddTaskBtn = document.getElementById("cancelAddTask");
+  const taskEditModal = document.getElementById("taskEditModal");
+  const taskEditMeta = document.getElementById("taskEditMeta");
+  const taskEditForm = document.getElementById("taskEditForm");
+  const taskEditTitle = document.getElementById("taskEditTitle");
+  const taskEditDescription = document.getElementById("taskEditDescription");
+  const taskEditStatus = document.getElementById("taskEditStatus");
+  const taskEditProject = document.getElementById("taskEditProject");
+  const taskEditProgress = document.getElementById("taskEditProgress");
+  const taskEditDueDate = document.getElementById("taskEditDueDate");
+  const taskEditDelete = document.getElementById("taskEditDelete");
 
   const showActionStatus = (message, type = "success") => {
     if (!actionStatusEl) return;
@@ -47,6 +58,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let clients = data.clients || [];
   let projects = data.projects || [];
   let tasks = data.tasks || [];
+  let currentEditTask = null;
 
   let currentClientId = null;
   let currentProjectId = null;
@@ -114,14 +126,57 @@ document.addEventListener("DOMContentLoaded", async () => {
       opt.textContent = p.name || p.projectId;
       projectSelect.appendChild(opt);
     });
+  }
 
+  function populateAddTaskClientSelect() {
+    if (!addTaskClientSelect) return;
+    addTaskClientSelect.innerHTML = '<option value="">Select client</option>';
+    clients.forEach((c) => {
+      const opt = document.createElement("option");
+      opt.value = c.clientId;
+      opt.textContent = c.clientName || c.username || c.clientId;
+      addTaskClientSelect.appendChild(opt);
+    });
+  }
+
+  function populateAddTaskProjectSelect(selectedProjectId) {
+    if (!addTaskProjectSelect) return;
+    const clientId = addTaskClientSelect ? addTaskClientSelect.value : "";
     addTaskProjectSelect.innerHTML = "";
+
+    if (!clientId) {
+      addTaskProjectSelect.disabled = true;
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "Select client first";
+      addTaskProjectSelect.appendChild(opt);
+      return;
+    }
+
+    const visibleProjects = projects.filter((p) => p.clientId === clientId);
+    if (!visibleProjects.length) {
+      addTaskProjectSelect.disabled = true;
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "No projects for this client";
+      addTaskProjectSelect.appendChild(opt);
+      return;
+    }
+
+    addTaskProjectSelect.disabled = false;
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Select project";
+    addTaskProjectSelect.appendChild(placeholder);
     visibleProjects.forEach((p) => {
       const opt = document.createElement("option");
       opt.value = p.projectId;
       opt.textContent = p.name || p.projectId;
       addTaskProjectSelect.appendChild(opt);
     });
+    if (selectedProjectId) {
+      addTaskProjectSelect.value = selectedProjectId;
+    }
   }
 
   function buildProjectOptions(selectedId) {
@@ -133,6 +188,36 @@ document.addEventListener("DOMContentLoaded", async () => {
           }</option>`
       )
       .join("");
+  }
+
+  function openTaskModal(task) {
+    if (!taskEditModal || !taskEditForm) return;
+    currentEditTask = task;
+    const project = projects.find((p) => p.projectId === task.projectId);
+    const client = project ? clients.find((c) => c.clientId === project.clientId) : null;
+    if (taskEditMeta) {
+      const projectLabel = project?.name || "Unknown project";
+      const clientLabel = client?.clientName || client?.username || "Unknown client";
+      taskEditMeta.textContent = `${projectLabel} \u2022 ${clientLabel}`;
+    }
+    if (taskEditTitle) taskEditTitle.value = task.title || "";
+    if (taskEditDescription) taskEditDescription.value = task.description || "";
+    if (taskEditStatus) taskEditStatus.value = task.status || "not-started";
+    if (taskEditProject) taskEditProject.innerHTML = buildProjectOptions(task.projectId);
+    if (taskEditProgress) taskEditProgress.value = Number.isFinite(task.progress) ? task.progress : 0;
+    if (taskEditDueDate) taskEditDueDate.value = task.dueDate || "";
+
+    taskEditModal.classList.add("is-open");
+    taskEditModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+  }
+
+  function closeTaskModal() {
+    if (!taskEditModal) return;
+    taskEditModal.classList.remove("is-open");
+    taskEditModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    currentEditTask = null;
   }
   function getClientNameForTask(task) {
     const project = projects.find((p) => p.projectId === task.projectId);
@@ -209,6 +294,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       .forEach((t) => {
         const clientName = getClientNameForTask(t);
         const projectName = getProjectNameForTask(t);
+        const statusValue = t.status || "not-started";
+        const dueLabel = BXCore.formatDate(t.dueDate) || "TBD";
         const card = document.createElement("article");
         card.className = "task-card";
         card.dataset.taskId = t.taskId;
@@ -222,63 +309,33 @@ document.addEventListener("DOMContentLoaded", async () => {
                 <span>${clientName}</span>
               </p>
             </div>
-            <div>
+            <div class="task-card-controls">
+              <span class="badge ${statusValue}">${statusValue.replace("-", " ")}</span>
               ${
                 isAdmin
-                  ? `<select class="admin-status">
-                       <option value="not-started" ${t.status === "not-started" ? "selected" : ""}>Not started</option>
-                       <option value="in-progress" ${t.status === "in-progress" ? "selected" : ""}>In progress</option>
-                       <option value="completed" ${t.status === "completed" ? "selected" : ""}>Completed</option>
-                       <option value="blocked" ${t.status === "blocked" ? "selected" : ""}>Blocked</option>
-                     </select>`
-                  : `<span class="badge ${t.status || "not-started"}">${
-                      (t.status || "not-started").replace("-", " ")
-                    }</span>`
+                  ? `<button class="btn-secondary btn-compact task-edit-open" type="button">Edit</button>`
+                  : ""
               }
             </div>
           </header>
-          <div class="task-card-grid">
+          <div class="task-card-grid task-view">
             <div class="form-row">
               <label>Project</label>
-              ${
-                isAdmin
-                  ? `<select class="admin-project">
-                       ${buildProjectOptions(t.projectId)}
-                     </select>`
-                  : `<div class="task-static">${projectName}</div>`
-              }
+              <div class="task-static">${projectName}</div>
             </div>
             <div class="form-row">
               <label>Progress</label>
-              ${
-                isAdmin
-                  ? `<input class="admin-progress" type="number" min="0" max="100" value="${
-                      t.progress || 0
-                    }" />`
-                  : `<div class="task-static">${t.progress || 0}%</div>`
-              }
+              <div class="task-static">${t.progress || 0}%</div>
             </div>
             <div class="form-row">
               <label>Due date</label>
-              ${
-                isAdmin
-                  ? `<input class="admin-dueDate" type="date" value="${t.dueDate || ""}" />`
-                  : `<div class="task-static">${BXCore.formatDate(t.dueDate) || "TBD"}</div>`
-              }
+              <div class="task-static">${dueLabel}</div>
             </div>
             <div class="form-row">
               <label>Updated</label>
               <div class="task-static">${BXCore.formatDateTime(t.updatedAt)}</div>
             </div>
           </div>
-          ${
-            isAdmin
-              ? `<div class="task-card-actions">
-                   <button class="ghost admin-save" type="button">Save</button>
-                   <button class="btn-danger admin-delete" type="button">Delete</button>
-                 </div>`
-              : ""
-          }
         `;
         wrap.appendChild(card);
       });
@@ -289,65 +346,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (!card) return;
         const taskId = card.dataset.taskId;
 
-      if (e.target.classList.contains("admin-delete")) {
-        const confirmDelete = await BXCore.confirmAction({
-          title: "Delete task?",
-          message: "This will permanently remove the task from the project.",
-          confirmLabel: "Delete task",
-          tone: "danger",
-        });
-        if (!confirmDelete) return;
-        BXCore.setButtonLoading(e.target, true, "Deleting...");
-        try {
-          const resp = await BXCore.apiPost({ action: "deleteTask", taskId });
-          if (!resp.ok) throw new Error(resp.error || "Delete failed");
-          data = await BXCore.apiGetAll(true);
-          BXCore.updateSidebarStats(data);
-          projects = data.projects || [];
-          tasks = data.tasks || [];
-          renderTasks();
-          showActionStatus("Task removed. The list is up to date.", "success");
-        } catch (err) {
-          console.error(err);
-          showActionStatus("Couldn't delete the task. Please try again.", "error");
-        } finally {
-          BXCore.setButtonLoading(e.target, false);
-        }
-        return;
-      }
-
-      if (e.target.classList.contains("admin-save")) {
-        const projectSel = card.querySelector(".admin-project");
-        const statusSel = card.querySelector(".admin-status");
-        const progressInput = card.querySelector(".admin-progress");
-        const dueInput = card.querySelector(".admin-dueDate");
-        BXCore.setButtonLoading(e.target, true, "Saving...");
-        try {
-          const resp = await BXCore.apiPost({
-            action: "updateTask",
-            taskId,
-            projectId: projectSel.value,
-            status: statusSel.value,
-            progress: Number(progressInput.value || 0),
-            dueDate: dueInput.value || "",
-            updatedAt: new Date().toISOString(),
-          });
-          if (!resp.ok) throw new Error(resp.error || "Update failed");
-          data = await BXCore.apiGetAll(true);
-          BXCore.updateSidebarStats(data);
-          projects = data.projects || [];
-          tasks = data.tasks || [];
-          renderTasks();
-          showActionStatus("Task updated successfully.", "success");
-        } catch (err) {
-          console.error(err);
-          showActionStatus("Couldn't update the task. Please try again.", "error");
-        } finally {
-          BXCore.setButtonLoading(e.target, false);
-        }
-      }
-    });
-  }
+        const openBtn = e.target.closest(".task-edit-open");
+        if (!openBtn) return;
+        const task = tasks.find((item) => item.taskId === taskId);
+        if (task) openTaskModal(task);
+      });
+    }
 
     tasksTableWrapper.appendChild(wrap);
   }
@@ -363,7 +367,103 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderTasks();
   });
 
+  if (addTaskClientSelect) {
+    addTaskClientSelect.addEventListener("change", () => {
+      populateAddTaskProjectSelect();
+    });
+  }
+
   statusFilter.addEventListener("change", renderTasks);
+
+  if (taskEditModal) {
+    taskEditModal.addEventListener("click", (e) => {
+      if (e.target.closest("[data-modal-close]")) {
+        closeTaskModal();
+      }
+    });
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && taskEditModal?.classList.contains("is-open")) {
+      closeTaskModal();
+    }
+  });
+
+  if (taskEditDelete) {
+    taskEditDelete.addEventListener("click", async () => {
+      if (!currentEditTask) return;
+      const confirmDelete = await BXCore.confirmAction({
+        title: "Delete task?",
+        message: "This will permanently remove the task from the project.",
+        confirmLabel: "Delete task",
+        tone: "danger",
+      });
+      if (!confirmDelete) return;
+      BXCore.setButtonLoading(taskEditDelete, true, "Deleting...");
+      try {
+        const resp = await BXCore.apiPost({ action: "deleteTask", taskId: currentEditTask.taskId });
+        if (!resp.ok) throw new Error(resp.error || "Delete failed");
+        data = await BXCore.apiGetAll(true);
+        BXCore.updateSidebarStats(data);
+        projects = data.projects || [];
+        tasks = data.tasks || [];
+        closeTaskModal();
+        renderTasks();
+        showActionStatus("Task removed. The list is up to date.", "success");
+      } catch (err) {
+        console.error(err);
+        showActionStatus("Couldn't delete the task. Please try again.", "error");
+      } finally {
+        BXCore.setButtonLoading(taskEditDelete, false);
+      }
+    });
+  }
+
+  if (taskEditForm) {
+    taskEditForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!currentEditTask) return;
+      const submitBtn = taskEditForm.querySelector("button[type=\"submit\"]");
+      const nextTitle = taskEditTitle ? taskEditTitle.value.trim() : "";
+      if (!nextTitle) {
+        showActionStatus("Task title is required.", "error");
+        return;
+      }
+      const nextDescription = taskEditDescription ? taskEditDescription.value.trim() : "";
+      const nextStatus = taskEditStatus ? taskEditStatus.value : "not-started";
+      const nextProjectId = taskEditProject ? taskEditProject.value : currentEditTask.projectId;
+      const nextProgress = taskEditProgress ? Number(taskEditProgress.value || 0) : 0;
+      const nextDueDate = taskEditDueDate && taskEditDueDate.value ? taskEditDueDate.value : null;
+
+      BXCore.setButtonLoading(submitBtn, true, "Saving...");
+      try {
+        const resp = await BXCore.apiPost({
+          action: "updateTask",
+          taskId: currentEditTask.taskId,
+          projectId: nextProjectId,
+          title: nextTitle,
+          description: nextDescription,
+          status: nextStatus,
+          progress: Number.isFinite(nextProgress) ? nextProgress : 0,
+          dueDate: nextDueDate,
+          updatedAt: new Date().toISOString(),
+        });
+        if (!resp.ok) throw new Error(resp.error || "Update failed");
+        data = await BXCore.apiGetAll(true);
+        BXCore.updateSidebarStats(data);
+        projects = data.projects || [];
+        tasks = data.tasks || [];
+        closeTaskModal();
+        renderTasks();
+        showActionStatus("Task updated successfully.", "success");
+      } catch (err) {
+        console.error(err);
+        showActionStatus("Couldn't update the task. Please try again.", "error");
+      } finally {
+        BXCore.setButtonLoading(submitBtn, false);
+      }
+    });
+  }
 
   document.getElementById("addTaskForm").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -371,9 +471,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     const submitBtn = e.target.querySelector("button[type=\"submit\"]");
 
     const fd = new FormData(e.target);
-    const projectId = fd.get("projectId");
+    const clientId = String(fd.get("clientId") || "").trim();
+    const projectId = String(fd.get("projectId") || "").trim();
+    if (!clientId) {
+      showActionStatus("Please select a client before adding a task.", "error");
+      return;
+    }
     if (!projectId) {
       showActionStatus("Please select a project before adding a task.", "error");
+      return;
+    }
+    const projectMatch = projects.find((p) => p.projectId === projectId);
+    if (projectMatch && projectMatch.clientId !== clientId) {
+      showActionStatus("Selected project does not belong to that client.", "error");
       return;
     }
     BXCore.setButtonLoading(submitBtn, true, "Saving...");
@@ -383,7 +493,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const description = String(fd.get("description") || "").trim();
     const status = String(fd.get("status") || "in-progress").trim();
     const progress = Number(fd.get("progress") || 0);
-    const dueDate = String(fd.get("dueDate") || "");
+    const dueDate = String(fd.get("dueDate") || "").trim();
+    const normalizedDueDate = dueDate ? dueDate : null;
 
     try {
       const resp = await BXCore.apiPost({
@@ -394,13 +505,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         description,
         status,
         progress: Number.isFinite(progress) ? progress : 0,
-        dueDate,
+        dueDate: normalizedDueDate,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
       if (!resp.ok) throw new Error(resp.error || "Create failed");
 
       e.target.reset();
+      populateAddTaskProjectSelect();
       if (addTaskStatus) {
         addTaskStatus.textContent = "Task added successfully.";
         addTaskStatus.style.display = "block";
@@ -413,6 +525,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       projects = data.projects || [];
       tasks = data.tasks || [];
       populateProjectSelects();
+      populateAddTaskClientSelect();
+      populateAddTaskProjectSelect();
       renderTasks();
     } catch (err) {
       console.error(err);
@@ -424,12 +538,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   populateClientSelect();
   populateProjectSelects();
+  populateAddTaskClientSelect();
+  populateAddTaskProjectSelect();
 
   if (quickProjectId) {
     const quickProject = projects.find((p) => p.projectId === quickProjectId);
     if (quickProject) {
-      projectSelect.value = quickProjectId;
-      addTaskProjectSelect.value = quickProjectId;
+      if (addTaskClientSelect) {
+        addTaskClientSelect.value = quickProject.clientId;
+      }
+      populateAddTaskProjectSelect(quickProjectId);
       if (addTaskPanel) {
         addTaskPanel.classList.remove("is-collapsed");
         addTaskPanel.setAttribute("aria-hidden", "false");

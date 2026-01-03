@@ -66,20 +66,52 @@
         </header>
 
         <p class="managed-note">Tasks are managed by BX Media. This view is read-only.</p>
+        <div class="subpanel section-block">
+          <div class="tasks-filters">
+            <div class="form-row">
+              <label>Project</label>
+              <select id="projectFilterSelect"></select>
+            </div>
+          </div>
+        </div>
 
         <div id="projectViewHeader"></div>
 
         <div id="projectTabs"></div>
 
-        <!-- TASKS TABLE -->
-        <section class="subpanel section-block">
-          <h2>Tasks</h2>
-          <div id="tasksTableWrapper"></div>
-        </section>
+        <div id="projectTabViews">
+          <section id="projectOverviewSection" class="subpanel section-block" style="display:none"></section>
+          <section id="projectTasksSection" class="subpanel section-block">
+            <h2>Tasks</h2>
+            <div id="tasksTableWrapper"></div>
+          </section>
+          <section id="projectFilesSection" class="subpanel section-block" style="display:none">
+            <h2>Files</h2>
+            <div id="filesGrid" class="deliverables-grid"></div>
+          </section>
+        </div>
       </section>
     </div>
   </main>
 
+</div>
+
+<div class="modal" id="filesLinksModal" aria-hidden="true" role="dialog" aria-modal="true">
+  <div class="modal-backdrop" data-modal-close></div>
+  <div class="modal-panel">
+    <header class="modal-header">
+      <div>
+        <h2 id="filesLinksTitle">Deliverable links</h2>
+        <p class="modal-helper" id="filesLinksSubtitle"></p>
+      </div>
+      <button class="ghost modal-close" type="button" data-modal-close>
+        <i class="fas fa-xmark"></i> Close
+      </button>
+    </header>
+    <div class="modal-body">
+      <div class="modal-links" id="filesLinksList"></div>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -94,6 +126,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   const wrapper = document.getElementById("tasksTableWrapper");
   const headerEl = document.getElementById("projectViewHeader");
   const tabsEl = document.getElementById("projectTabs");
+  const overviewSection = document.getElementById("projectOverviewSection");
+  const tasksSection = document.getElementById("projectTasksSection");
+  const filesSection = document.getElementById("projectFilesSection");
+  const filesGrid = document.getElementById("filesGrid");
+  const projectFilterSelect = document.getElementById("projectFilterSelect");
+  const filesLinksModal = document.getElementById("filesLinksModal");
+  const filesLinksTitle = document.getElementById("filesLinksTitle");
+  const filesLinksSubtitle = document.getElementById("filesLinksSubtitle");
+  const filesLinksList = document.getElementById("filesLinksList");
   BXCore.renderSkeleton(wrapper, "timeline", 4);
 
   // Load all data
@@ -119,11 +160,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const projects = data.projects || [];
   const tasks = data.tasks || [];
+  const deliverables = data.deliverables || [];
 
   const params = new URLSearchParams(window.location.search);
   const selectedProjectId = params.get("projectId");
   const visibleProjects = selectedProjectId
-    ? projects.filter(p => p.projectId === selectedProjectId)
+    ? projects.filter((p) => p.projectId === selectedProjectId)
     : projects.slice();
 
   if (!visibleProjects.length) {
@@ -144,8 +186,45 @@ document.addEventListener("DOMContentLoaded", async () => {
     ? visibleProjects.find((p) => p.projectId === selectedProjectId)
     : null;
 
+  const populateProjectFilter = () => {
+    if (!projectFilterSelect) return;
+    projectFilterSelect.innerHTML = "";
+    const allOpt = document.createElement("option");
+    allOpt.value = "all";
+    allOpt.textContent = "All projects";
+    projectFilterSelect.appendChild(allOpt);
+    visibleProjects.forEach((p) => {
+      const opt = document.createElement("option");
+      opt.value = p.projectId;
+      opt.textContent = p.name || p.projectId;
+      projectFilterSelect.appendChild(opt);
+    });
+    if (selectedProjectId) {
+      projectFilterSelect.value = selectedProjectId;
+    }
+  };
+
+  const isVisibleDeliverable = (d) => {
+    if (d?.visibleToClient === undefined || d?.visibleToClient === null) return true;
+    if (typeof d.visibleToClient === "string") return d.visibleToClient.toLowerCase() === "true";
+    return d.visibleToClient === true;
+  };
+
+  const setActiveTab = (tabId) => {
+    const tabButtons = tabsEl?.querySelectorAll("[data-tab]") || [];
+    tabButtons.forEach((btn) => {
+      btn.classList.toggle("is-active", btn.dataset.tab === tabId);
+    });
+    if (overviewSection) overviewSection.style.display = tabId === "overview" ? "block" : "none";
+    if (tasksSection) tasksSection.style.display = tabId === "tasks" ? "block" : "none";
+    if (filesSection) filesSection.style.display = tabId === "files" ? "block" : "none";
+  };
+
   if (selectedProject) {
     const projectTasks = tasks.filter((t) => t.projectId === selectedProject.projectId);
+    const projectDeliverables = deliverables.filter(
+      (d) => d.projectId === selectedProject.projectId && isVisibleDeliverable(d)
+    );
     const progress = BXCore.computeProjectProgress(projectTasks);
     const progressLabel = progress === 0 ? "--" : `${progress}%`;
     const progressHelper = progress === 0 ? "No tasks yet" : "";
@@ -170,15 +249,178 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     tabsEl.innerHTML = `
       <div class="tabs">
-        <button class="tab is-disabled" type="button" title="Managed by BX Media">Overview</button>
-        <button class="tab is-active" type="button">Tasks</button>
-        <button class="tab is-disabled" type="button" title="Managed by BX Media">Files</button>
-        <button class="tab is-disabled" type="button" title="Managed by BX Media">Updates</button>
+        <button class="tab is-active" type="button" data-tab="overview">Overview</button>
+        <button class="tab" type="button" data-tab="tasks">Tasks</button>
+        <button class="tab" type="button" data-tab="files">Files</button>
       </div>
     `;
+    if (overviewSection) {
+      overviewSection.innerHTML = `
+        <h2>Overview</h2>
+        <p class="helper">${selectedProject.description || "No description added yet."}</p>
+        <div class="summary-row" style="margin-top:1rem;">
+          <div class="summary-card neutral">
+            <span class="summary-icon"><i class="fas fa-list-check"></i></span>
+            <div>
+              <span>Tasks</span>
+              <strong>${projectTasks.length}</strong>
+              <span class="summary-helper">Linked to this project</span>
+            </div>
+          </div>
+          <div class="summary-card neutral">
+            <span class="summary-icon"><i class="fas fa-box-open"></i></span>
+            <div>
+              <span>Files</span>
+              <strong>${projectDeliverables.length}</strong>
+              <span class="summary-helper">Deliverables available</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    if (filesGrid) {
+      filesGrid.innerHTML = "";
+      if (!projectDeliverables.length) {
+        filesGrid.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon"><i class="fas fa-box-open"></i></div>
+            <div>
+              <h3>No files yet</h3>
+              <p>Your BX Media team will add deliverables here when ready.</p>
+              <p class="empty-hint">Next step: check back after delivery.</p>
+            </div>
+          </div>
+        `;
+      } else {
+        projectDeliverables.forEach((d) => {
+          const statusValue = d.status || "not-started";
+          const hasLinks = Boolean(
+            d.deliveryLink || d.downloadLink || d.previewLink || d.driveLink
+          );
+          const card = document.createElement("article");
+          card.className = "deliverable-card";
+          card.dataset.title = d.name || "Deliverable";
+          card.dataset.subtitle = selectedProject?.name || "Project";
+          if (d.deliveryLink) card.dataset.deliveryLink = d.deliveryLink;
+          if (d.downloadLink) card.dataset.downloadLink = d.downloadLink;
+          if (d.previewLink) card.dataset.previewLink = d.previewLink;
+          if (d.driveLink) card.dataset.driveLink = d.driveLink;
+          card.innerHTML = `
+            <div class="deliverable-cover" style="${
+              d.coverImage ? `background-image:url('${d.coverImage}')` : ""
+            }">
+              <span class="badge ${statusValue}">${statusValue.replace("-", " ")}</span>
+            </div>
+            <div class="deliverable-body">
+              <h3>${d.name || "Untitled deliverable"}</h3>
+              <div class="deliverable-meta">
+                <span>${BXCore.formatDate(d.updatedAt || d.createdAt) || "Updated recently"}</span>
+                <span>${statusValue.replace("-", " ")}</span>
+              </div>
+              <div class="deliverable-actions">
+                <button class="btn-secondary" type="button" ${hasLinks ? "" : "disabled"}>
+                  ${hasLinks ? "View links" : "Link missing"}
+                </button>
+              </div>
+            </div>
+          `;
+          filesGrid.appendChild(card);
+        });
+      }
+    }
+    setActiveTab("overview");
+
+    tabsEl.querySelectorAll("[data-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        setActiveTab(btn.dataset.tab);
+      });
+    });
   } else {
     headerEl.innerHTML = "";
     tabsEl.innerHTML = "";
+    if (overviewSection) overviewSection.style.display = "none";
+    if (filesSection) filesSection.style.display = "none";
+  }
+
+  const openFilesLinksModal = (card) => {
+    if (!filesLinksModal || !filesLinksList) return;
+    const title = card.dataset.title || "Deliverable links";
+    const subtitle = card.dataset.subtitle || "";
+    if (filesLinksTitle) filesLinksTitle.textContent = title;
+    if (filesLinksSubtitle) filesLinksSubtitle.textContent = subtitle;
+    filesLinksList.innerHTML = "";
+
+    const linkDefs = [
+      { key: "deliveryLink", label: "Delivery link" },
+      { key: "downloadLink", label: "Download link" },
+      { key: "previewLink", label: "Preview link" },
+      { key: "driveLink", label: "Drive link" },
+    ];
+
+    const links = linkDefs
+      .map((def) => ({ label: def.label, url: card.dataset[def.key] || "" }))
+      .filter((item) => item.url);
+
+    if (!links.length) {
+      filesLinksList.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon"><i class="fas fa-link"></i></div>
+          <div>
+            <h3>No links available</h3>
+            <p>Links will appear here once they are added.</p>
+          </div>
+        </div>
+      `;
+    } else {
+      links.forEach((item) => {
+        const linkEl = document.createElement("a");
+        linkEl.className = "modal-link";
+        linkEl.href = item.url;
+        linkEl.target = "_blank";
+        linkEl.rel = "noopener";
+        linkEl.innerHTML = `<i class="fas fa-link"></i> ${item.label}`;
+        filesLinksList.appendChild(linkEl);
+      });
+    }
+
+    filesLinksModal.classList.add("is-open");
+    filesLinksModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+  };
+
+  const closeFilesLinksModal = () => {
+    if (!filesLinksModal) return;
+    filesLinksModal.classList.remove("is-open");
+    filesLinksModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+  };
+
+  if (filesLinksModal) {
+    filesLinksModal.addEventListener("click", (e) => {
+      if (e.target.closest("[data-modal-close]")) {
+        closeFilesLinksModal();
+      }
+    });
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && filesLinksModal?.classList.contains("is-open")) {
+      closeFilesLinksModal();
+    }
+  });
+
+  if (filesGrid) {
+    filesGrid.addEventListener("click", (e) => {
+      const card = e.target.closest(".deliverable-card");
+      if (!card) return;
+      const hasLinks =
+        card.dataset.deliveryLink ||
+        card.dataset.downloadLink ||
+        card.dataset.previewLink ||
+        card.dataset.driveLink;
+      if (!hasLinks) return;
+      openFilesLinksModal(card);
+    });
   }
 
   if (!tasks.length) {
@@ -257,9 +499,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         const item = document.createElement("div");
         item.className = "client-task-card";
         const dueLabel = BXCore.formatDate(task.dueDate) || "No due date";
+        const description = task.description || "";
         item.innerHTML = `
           <div>
             <strong>${task.title || "Task"}</strong>
+            ${description ? `<div class="client-task-desc">${description}</div>` : ""}
             <div class="client-task-meta">Due: ${dueLabel}</div>
           </div>
           <span class="badge ${task.status || "not-started"}">
@@ -274,6 +518,25 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   wrapper.appendChild(list);
+
+  populateProjectFilter();
+  if (projectFilterSelect) {
+    projectFilterSelect.addEventListener("change", () => {
+      const nextId = projectFilterSelect.value;
+      if (nextId === "all") {
+        window.location.search = "";
+      } else {
+        const next = new URLSearchParams(window.location.search);
+        next.set("projectId", nextId);
+        window.location.search = next.toString();
+      }
+    });
+  }
+
+  setInterval(() => {
+    if (document.visibilityState !== "visible") return;
+    window.location.reload();
+  }, 20000);
 });
 </script>
 

@@ -71,7 +71,7 @@
               <div class="form-row">
                 <label>Status</label>
                 <select id="tasksStatusFilter">
-                  <option value="all">All</option>
+                  <option value="all" selected>All</option>
                   <option value="not-started">Not started</option>
                   <option value="in-progress">In progress</option>
                   <option value="completed">Completed</option>
@@ -90,6 +90,10 @@
               <div id="addTaskPanel" class="collapsible" aria-hidden="false">
                 <form id="addTaskForm" class="form-grid">
                   <div class="form-row">
+                    <label>Client</label>
+                    <select id="addTaskClientSelect" name="clientId" required></select>
+                  </div>
+                  <div class="form-row">
                     <label>Project</label>
                     <select id="addTaskProjectSelect" name="projectId" required></select>
                   </div>
@@ -104,8 +108,8 @@
                   <div class="form-row">
                     <label>Status</label>
                     <select name="status">
-                      <option value="not-started">Not started</option>
-                      <option value="in-progress" selected>In progress</option>
+                      <option value="not-started" selected>Not started</option>
+                      <option value="in-progress">In progress</option>
                       <option value="completed">Completed</option>
                       <option value="blocked">Blocked</option>
                     </select>
@@ -148,6 +152,61 @@
         </section>
       </div>
     </main>
+  </div>
+
+  <div class="modal" id="taskEditModal" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-modal-close></div>
+    <div class="modal-panel">
+      <header class="modal-header">
+        <div>
+          <h2>Edit task</h2>
+          <p class="modal-helper" id="taskEditMeta"></p>
+        </div>
+        <button class="ghost modal-close" type="button" data-modal-close>
+          <i class="fas fa-xmark"></i> Close
+        </button>
+      </header>
+      <form id="taskEditForm" class="form-grid">
+        <div class="form-row">
+          <label>Title</label>
+          <input id="taskEditTitle" name="title" required />
+        </div>
+        <div class="form-row">
+          <label>Description</label>
+          <textarea id="taskEditDescription" name="description" rows="3"></textarea>
+        </div>
+        <div class="form-row">
+          <label>Status</label>
+          <select id="taskEditStatus" name="status">
+            <option value="not-started">Not started</option>
+            <option value="in-progress">In progress</option>
+            <option value="completed">Completed</option>
+            <option value="blocked">Blocked</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Project</label>
+          <select id="taskEditProject" name="projectId"></select>
+        </div>
+        <div class="form-row">
+          <label>Progress (%)</label>
+          <input id="taskEditProgress" name="progress" type="number" min="0" max="100" />
+        </div>
+        <div class="form-row">
+          <label>Due date</label>
+          <input id="taskEditDueDate" name="dueDate" type="date" />
+        </div>
+        <div class="modal-actions">
+          <button class="btn-danger" type="button" id="taskEditDelete">Delete</button>
+          <button class="btn-primary" type="submit" data-default-label="Save changes">
+            <span class="btn-label"><i class="fas fa-floppy-disk"></i> <span class="btn-text">Save changes</span></span>
+            <span class="btn-spinner" aria-hidden="true">
+              <i class="fas fa-circle-notch fa-spin"></i>
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

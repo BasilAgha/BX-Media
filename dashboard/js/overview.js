@@ -52,11 +52,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const proj = projects.find((p) => p.projectId === t.projectId);
         const client = proj ? clients.find((c) => c.clientId === proj.clientId) : null;
         const statusLabel = (t.status || "not-started").replace("-", " ");
-        const type =
-          t.status === "completed" ? "delivery" : t.status === "in-progress" ? "team" : "system";
-        const tagLabel =
-          type === "delivery" ? "File delivery" : type === "team" ? "Team update" : "System update";
-        const marker = type === "delivery" ? "D" : type === "team" ? "T" : "S";
+        const marker = "•";
 
         const item = document.createElement("div");
         item.className = "timeline-item";
@@ -68,7 +64,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             <div class="timeline-meta">
               <span>${BXCore.formatDateTime(t.updatedAt) || "No recent update"}</span>
               ${client ? `<span>Client: ${client.clientName || client.username}</span>` : ""}
-              <span class="timeline-tag ${type}">${tagLabel}</span>
             </div>
           </div>
         `;

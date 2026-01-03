@@ -824,6 +824,28 @@ button[disabled],
   gap: 0.5rem;
   box-shadow: 0 12px 24px rgba(0,0,0,0.28);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.project-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 10% 0%, rgba(255,106,42,0.08), transparent 45%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.project-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,0.16);
+  box-shadow: 0 16px 28px rgba(0,0,0,0.32);
+}
+
+.project-card:hover::after {
+  opacity: 1;
 }
 
 .project-card header {
@@ -1427,6 +1449,29 @@ tbody tr:nth-child(even) {
   box-shadow: 0 12px 24px rgba(0,0,0,0.25);
   display: grid;
   gap: 0.85rem;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.task-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 10% 0%, rgba(255,106,42,0.08), transparent 45%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.task-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,0.16);
+  box-shadow: 0 16px 28px rgba(0,0,0,0.32);
+}
+
+.task-card:hover::after {
+  opacity: 1;
 }
 
 .task-card-header {
@@ -1449,6 +1494,12 @@ tbody tr:nth-child(even) {
   align-items: center;
   gap: 0.4rem;
   flex-wrap: wrap;
+}
+
+.task-card-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .task-card-sep {
@@ -1480,6 +1531,45 @@ tbody tr:nth-child(even) {
   font-size: 0.85rem;
 }
 
+.task-edit {
+  margin-top: 0.4rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition: max-height 0.25s ease, opacity 0.25s ease;
+}
+
+.task-card.is-editing .task-edit {
+  max-height: 520px;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.task-edit-title {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+.task-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.7rem;
+}
+
+.task-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
 .task-card-actions {
   display: flex;
   justify-content: flex-end;
@@ -1495,6 +1585,24 @@ tbody tr:nth-child(even) {
 
 .task-card input.admin-progress {
   max-width: 120px;
+}
+
+.filter-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(3,3,10,0.5);
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-bottom: 0.8rem;
+}
+
+.filter-summary strong {
+  color: var(--text);
 }
 
 .table-wrapper th {
@@ -1603,8 +1711,8 @@ tbody tr:nth-child(even) {
 
 .project-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto;
-  gap: 0.8rem;
+  grid-template-columns: minmax(240px, 2.4fr) minmax(120px, 0.9fr) minmax(200px, 1.2fr) minmax(120px, 0.7fr) 96px;
+  gap: 1rem;
   align-items: center;
   padding: 0.75rem 0.9rem;
   background: #121318;
@@ -1638,6 +1746,42 @@ tbody tr:nth-child(even) {
 
 .project-cell {
   min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.project-row.header div:nth-child(2),
+.project-row.header div:nth-child(3),
+.project-row.header div:nth-child(4) {
+  text-align: center;
+}
+
+.project-row.header div:last-child {
+  text-align: right;
+}
+
+.project-row .project-cell:nth-child(2),
+.project-row .project-cell:nth-child(3),
+.project-row .project-cell:nth-child(4) {
+  justify-content: center;
+}
+
+.project-row .project-cell:last-child {
+  justify-content: flex-end;
+}
+
+.project-row .project-cell:first-child {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+}
+
+.project-row .project-cell.project-progress {
+  align-items: center;
+}
+
+.project-row .project-cell.project-action .btn-secondary {
+  width: 100%;
 }
 
 .type-pill {
@@ -1824,6 +1968,13 @@ progress::-moz-progress-bar {
 .client-task-meta {
   font-size: 0.78rem;
   color: var(--muted);
+}
+
+.client-task-desc {
+  margin-top: 0.2rem;
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.4;
 }
 
 /* ---------- Deliverables ---------- */
