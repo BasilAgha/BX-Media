@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const clientSelect = document.getElementById("tasksClientSelect");
   const projectSelect = document.getElementById("tasksProjectSelect");
   const statusFilter = document.getElementById("tasksStatusFilter");
+  const assigneeFilter = document.getElementById("tasksAssigneeFilter");
   const addTaskProjectSelect = document.getElementById("addTaskProjectSelect");
   const addTaskClientSelect = document.getElementById("addTaskClientSelect");
   const addTaskStatus = document.getElementById("addTaskStatus");
@@ -273,6 +274,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (statusFilter.value !== "all") {
       filtered = filtered.filter((t) => (t.status || "not-started") === statusFilter.value);
     }
+    if (assigneeFilter && assigneeFilter.value !== "all") {
+      filtered = filtered.filter((t) => (t.assignee || "bx-media") === assigneeFilter.value);
+    }
 
     if (!filtered.length) {
       tasksTableWrapper.innerHTML = `
@@ -381,6 +385,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   statusFilter.addEventListener("change", renderTasks);
+  if (assigneeFilter) {
+    assigneeFilter.addEventListener("change", renderTasks);
+  }
 
   if (taskEditModal) {
     taskEditModal.addEventListener("click", (e) => {
