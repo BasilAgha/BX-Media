@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const quickClientForm = document.getElementById("quickClientForm");
   const quickProjectClient = document.getElementById("quickProjectClient");
   const quickTaskProject = document.getElementById("quickTaskProject");
+  const quickTaskAssignee = document.getElementById("quickTaskAssignee");
   const quickProjectDate = document.getElementById("quickProjectDate");
 
   let clients = [];
@@ -317,6 +318,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const projectId = quickTaskProject?.value;
       const title = quickTaskForm.querySelector("#quickTaskTitle")?.value.trim();
       const description = quickTaskForm.querySelector("#quickTaskDesc")?.value.trim() || "";
+      const assignee = quickTaskAssignee?.value || "bx-media";
       const status = quickTaskForm.querySelector("#quickTaskStatus")?.value || "in-progress";
       const progress = Number(quickTaskForm.querySelector("#quickTaskProgress")?.value || 0);
       const dueDate = quickTaskForm.querySelector("#quickTaskDue")?.value || "";
@@ -334,6 +336,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           projectId,
           title,
           description,
+          assignee,
           status,
           progress: Number.isFinite(progress) ? progress : 0,
           dueDate,

@@ -23,6 +23,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const taskEditForm = document.getElementById("taskEditForm");
   const taskEditTitle = document.getElementById("taskEditTitle");
   const taskEditDescription = document.getElementById("taskEditDescription");
+  const taskEditAssignee = document.getElementById("taskEditAssignee");
   const taskEditStatus = document.getElementById("taskEditStatus");
   const taskEditProject = document.getElementById("taskEditProject");
   const taskEditProgress = document.getElementById("taskEditProgress");
@@ -202,6 +203,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     if (taskEditTitle) taskEditTitle.value = task.title || "";
     if (taskEditDescription) taskEditDescription.value = task.description || "";
+    if (taskEditAssignee) taskEditAssignee.value = task.assignee || "bx-media";
     if (taskEditStatus) taskEditStatus.value = task.status || "not-started";
     if (taskEditProject) taskEditProject.innerHTML = buildProjectOptions(task.projectId);
     if (taskEditProgress) taskEditProgress.value = Number.isFinite(task.progress) ? task.progress : 0;
@@ -296,6 +298,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const projectName = getProjectNameForTask(t);
         const statusValue = t.status || "not-started";
         const dueLabel = BXCore.formatDate(t.dueDate) || "TBD";
+        const assigneeLabel = t.assignee === "client" ? "Client" : "BX Media";
         const card = document.createElement("article");
         card.className = "task-card";
         card.dataset.taskId = t.taskId;
@@ -330,6 +333,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             <div class="form-row">
               <label>Due date</label>
               <div class="task-static">${dueLabel}</div>
+            </div>
+            <div class="form-row">
+              <label>Assignee</label>
+              <div class="task-static">${assigneeLabel}</div>
             </div>
             <div class="form-row">
               <label>Updated</label>
@@ -430,6 +437,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
       const nextDescription = taskEditDescription ? taskEditDescription.value.trim() : "";
+      const nextAssignee = taskEditAssignee ? taskEditAssignee.value : "bx-media";
       const nextStatus = taskEditStatus ? taskEditStatus.value : "not-started";
       const nextProjectId = taskEditProject ? taskEditProject.value : currentEditTask.projectId;
       const nextProgress = taskEditProgress ? Number(taskEditProgress.value || 0) : 0;
@@ -443,6 +451,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           projectId: nextProjectId,
           title: nextTitle,
           description: nextDescription,
+          assignee: nextAssignee,
           status: nextStatus,
           progress: Number.isFinite(nextProgress) ? nextProgress : 0,
           dueDate: nextDueDate,
@@ -491,6 +500,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const taskId = "task_" + Date.now();
     const title = String(fd.get("title") || "").trim();
     const description = String(fd.get("description") || "").trim();
+    const assignee = String(fd.get("assignee") || "bx-media").trim();
     const status = String(fd.get("status") || "in-progress").trim();
     const progress = Number(fd.get("progress") || 0);
     const dueDate = String(fd.get("dueDate") || "").trim();
@@ -503,6 +513,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         projectId,
         title,
         description,
+        assignee,
         status,
         progress: Number.isFinite(progress) ? progress : 0,
         dueDate: normalizedDueDate,

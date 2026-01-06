@@ -499,12 +499,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         const item = document.createElement("div");
         item.className = "client-task-card";
         const dueLabel = BXCore.formatDate(task.dueDate) || "No due date";
+        const assigneeLabel = task.assignee === "client" ? "Client" : "BX Media";
         const description = task.description || "";
         item.innerHTML = `
           <div>
             <strong>${task.title || "Task"}</strong>
             ${description ? `<div class="client-task-desc">${description}</div>` : ""}
-            <div class="client-task-meta">Due: ${dueLabel}</div>
+            <div class="client-task-meta">Due: ${dueLabel} · Assignee: ${assigneeLabel}</div>
           </div>
           <span class="badge ${task.status || "not-started"}">
             ${(task.status || "not-started").replace("-", " ")}

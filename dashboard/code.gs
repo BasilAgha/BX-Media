@@ -313,6 +313,7 @@ function handleAddTask(d) {
     d.projectId,
     d.title || "",
     d.description || "",
+    d.assignee || "",
     d.status || "in-progress",
     Number(d.progress || 0),
     d.dueDate || "",

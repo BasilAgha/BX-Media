@@ -147,13 +147,20 @@
             <label for="quickTaskTitle">Task title</label>
             <input id="quickTaskTitle" name="title" placeholder="Design homepage hero" required />
           </div>
-          <div class="form-row">
-            <label for="quickTaskDesc">Description</label>
-            <textarea id="quickTaskDesc" name="description" rows="2" placeholder="Context, owners, links"></textarea>
-          </div>
-          <div class="form-row">
-            <label for="quickTaskStatus">Status</label>
-            <select id="quickTaskStatus" name="status">
+          <div class="form-row">
+            <label for="quickTaskDesc">Description</label>
+            <textarea id="quickTaskDesc" name="description" rows="2" placeholder="Context, owners, links"></textarea>
+          </div>
+          <div class="form-row">
+            <label for="quickTaskAssignee">Assignee</label>
+            <select id="quickTaskAssignee" name="assignee">
+              <option value="bx-media" selected>BX Media</option>
+              <option value="client">Client</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label for="quickTaskStatus">Status</label>
+            <select id="quickTaskStatus" name="status">
               <option value="not-started">Not started</option>
               <option value="in-progress" selected>In progress</option>
               <option value="completed">Completed</option>

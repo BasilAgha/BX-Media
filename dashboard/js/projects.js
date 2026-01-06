@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const quickTaskProjectId = document.getElementById("quickTaskProjectId");
   const quickTaskTitle = document.getElementById("quickTaskTitle");
   const quickTaskDescription = document.getElementById("quickTaskDescription");
+  const quickTaskAssignee = document.getElementById("quickTaskAssignee");
   const quickTaskStatus = document.getElementById("quickTaskStatus");
   const quickTaskProgress = document.getElementById("quickTaskProgress");
   const quickTaskDueDate = document.getElementById("quickTaskDueDate");
@@ -151,6 +152,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (quickTaskProjectId) quickTaskProjectId.value = project.projectId;
     if (quickTaskTitle) quickTaskTitle.value = "";
     if (quickTaskDescription) quickTaskDescription.value = "";
+    if (quickTaskAssignee) quickTaskAssignee.value = "bx-media";
     if (quickTaskStatus) quickTaskStatus.value = "not-started";
     if (quickTaskProgress) quickTaskProgress.value = 0;
     if (quickTaskDueDate) quickTaskDueDate.value = "";
@@ -372,6 +374,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
       const description = quickTaskDescription ? quickTaskDescription.value.trim() : "";
+      const assignee = quickTaskAssignee ? quickTaskAssignee.value : "bx-media";
       const status = quickTaskStatus ? quickTaskStatus.value : "not-started";
       const progress = quickTaskProgress ? Number(quickTaskProgress.value || 0) : 0;
       const dueDate =
@@ -386,6 +389,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           projectId: currentQuickProject.projectId,
           title,
           description,
+          assignee,
           status,
           progress: Number.isFinite(progress) ? progress : 0,
           dueDate,
