@@ -457,6 +457,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     ? tasksToRender.filter((t) => (t.assignee || "bx-media") === assigneeFilter)
     : tasksToRender;
 
+  const getProjectNameForTask = (task) => {
+    const project = projects.find((p) => p.projectId === task.projectId);
+    return project?.name || project?.projectId || "";
+  };
+
   wrapper.innerHTML = "";
   const list = document.createElement("div");
   list.className = "tasks-group-list";
@@ -490,6 +495,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       })
       .sort((a, b) => {
         if (useOrder) {
+          const aOrder = Number.isFinite(Number(a.taskOrder)) ? Number(a.taskOrder) : Number.MAX_SAFE_INTEGER;
+          const bOrder = Number.isFinite(Number(b.taskOrder)) ? Number(b.taskOrder) : Number.MAX_SAFE_INTEGER;
+          if (aOrder !== bOrder) return aOrder - bOrder;
+        } else {
+          const projectA = getProjectNameForTask(a).toLowerCase();
+          const projectB = getProjectNameForTask(b).toLowerCase();
+          const projectDiff = projectA.localeCompare(projectB);
+          if (projectDiff !== 0) return projectDiff;
           const aOrder = Number.isFinite(Number(a.taskOrder)) ? Number(a.taskOrder) : Number.MAX_SAFE_INTEGER;
           const bOrder = Number.isFinite(Number(b.taskOrder)) ? Number(b.taskOrder) : Number.MAX_SAFE_INTEGER;
           if (aOrder !== bOrder) return aOrder - bOrder;
