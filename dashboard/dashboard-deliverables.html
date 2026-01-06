@@ -9,6 +9,7 @@
 </head>
 <body>
   <div class="shell shell-multi">
+    <input type="checkbox" id="sidebarToggle" class="sidebar-toggle" />
     <aside class="sidebar">
       <div class="logo">
         <img src="../assets/index/7 logo.png" alt="BX Media" />
@@ -43,9 +44,14 @@
       <div class="page-container">
         <section class="panel">
           <header class="panel-header">
-            <div>
-              <h1>Deliverables</h1>
-              <p class="panel-subtitle">Package and ship final assets with clear project attribution.</p>
+            <div class="header-title-row">
+              <label for="sidebarToggle" class="sidebar-toggle-btn" aria-label="Open navigation">
+                <i class="fas fa-bars"></i>
+              </label>
+              <div>
+                <h1>Deliverables</h1>
+                <p class="panel-subtitle">Package and ship final assets with clear project attribution.</p>
+              </div>
             </div>
             <div class="panel-actions">
               <button class="btn-primary" id="openAddDeliverableInline" type="button">

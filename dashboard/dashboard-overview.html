@@ -8,7 +8,8 @@
   <link rel="stylesheet" href="css/dashboard.css" />
 </head>
 <body>
-  <div class="shell shell-multi">
+  <div class="shell shell-multi">
+    <input type="checkbox" id="sidebarToggle" class="sidebar-toggle" />
     
     <aside class="sidebar">
       <div class="logo">
@@ -44,12 +45,17 @@
     <main class="content">
       <div class="page-container">
         <section class="panel">
-          <header class="panel-header">
-            <div>
-              <h1 id="overviewTitle">Dashboard</h1>
-              <p class="panel-subtitle" id="overviewSubtitle">High-level visibility across clients, projects, and delivery.</p>
-            </div>
-          </header>
+          <header class="panel-header">
+            <div class="header-title-row">
+              <label for="sidebarToggle" class="sidebar-toggle-btn" aria-label="Open navigation">
+                <i class="fas fa-bars"></i>
+              </label>
+              <div>
+                <h1 id="overviewTitle">Dashboard</h1>
+                <p class="panel-subtitle" id="overviewSubtitle">High-level visibility across clients, projects, and delivery.</p>
+              </div>
+            </div>
+          </header>
           <div id="overviewStatus" class="alert alert-error" role="alert" style="display:none"></div>
 
           <section id="overviewSummary" class="summary-row"></section>

@@ -9,6 +9,7 @@
 </head>
 <body>
   <div class="shell shell-multi">
+    <input type="checkbox" id="sidebarToggle" class="sidebar-toggle" />
     
     <aside class="sidebar">
       <div class="logo">
@@ -45,9 +46,14 @@
       <div class="page-container">
         <section class="panel">
           <header class="panel-header">
-            <div>
-              <h1>Clients</h1>
-              <p class="panel-subtitle">Create and manage client access and contact details.</p>
+            <div class="header-title-row">
+              <label for="sidebarToggle" class="sidebar-toggle-btn" aria-label="Open navigation">
+                <i class="fas fa-bars"></i>
+              </label>
+              <div>
+                <h1>Clients</h1>
+                <p class="panel-subtitle">Create and manage client access and contact details.</p>
+              </div>
             </div>
           </header>
           <div id="clientsActionStatus" class="alert alert-success" style="display:none"></div>
