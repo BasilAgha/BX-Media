@@ -1223,6 +1223,21 @@ tbody tr:nth-child(even) {
   .shell-multi {
     grid-template-columns: 1fr;
   }
+  .shell:not(.client-shell) .sidebar,
+  .shell-multi:not(.client-shell) .sidebar {
+    position: relative;
+    height: auto;
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: var(--space-2);
+  }
+  .shell:not(.client-shell) .nav,
+  .shell-multi:not(.client-shell) .nav {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.5rem;
+  }
   .client-shell .sidebar {
     position: fixed;
     left: 0;
@@ -1247,7 +1262,31 @@ tbody tr:nth-child(even) {
   .content {
     padding: var(--space-2) var(--space-2) var(--space-3);
   }
+  .panel {
+    padding: var(--space-2);
+  }
+  .panel-actions,
+  .modal-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .panel-actions .btn-primary,
+  .panel-actions .btn-secondary,
+  .panel-actions .ghost,
+  .modal-actions .btn-primary,
+  .modal-actions .btn-secondary,
+  .modal-actions .ghost,
+  .modal-actions .btn-danger {
+    width: 100%;
+  }
+  .sidebar-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .layout-2col {
+    grid-template-columns: 1fr;
+  }
+  .tasks-filters {
     grid-template-columns: 1fr;
   }
   .task-row {
@@ -1256,6 +1295,19 @@ tbody tr:nth-child(even) {
   }
   .summary-row {
     grid-template-columns: 1fr;
+  }
+  .quick-actions {
+    grid-template-columns: 1fr;
+  }
+  .project-card header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .project-card-actions {
+    align-items: flex-start;
+  }
+  .project-meta {
+    flex-wrap: wrap;
   }
   .project-row {
     grid-template-columns: 1fr;
@@ -1294,6 +1346,23 @@ tbody tr:nth-child(even) {
   .header-meta {
     align-items: flex-start;
     text-align: left;
+  }
+  .modal-panel {
+    width: calc(100% - 24px);
+    max-height: 85vh;
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .sidebar-stats-grid {
+    grid-template-columns: 1fr;
+  }
+  .client-meta {
+    flex-wrap: wrap;
+  }
+  .logo span {
+    font-size: 0.85rem;
   }
 }
 
