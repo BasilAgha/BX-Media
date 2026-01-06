@@ -248,6 +248,7 @@
       if (next.created_at !== undefined && next.createdAt === undefined) next.createdAt = next.created_at;
       if (next.updated_at !== undefined && next.updatedAt === undefined) next.updatedAt = next.updated_at;
       if (next.project_id !== undefined && next.projectId === undefined) next.projectId = next.project_id;
+      if (next.project_date !== undefined && next.projectDate === undefined) next.projectDate = next.project_date;
       if (next.task_id !== undefined && next.taskId === undefined) next.taskId = next.task_id;
       if (next.due_date !== undefined && next.dueDate === undefined) next.dueDate = next.due_date;
       if (next.drive_link !== undefined && next.driveLink === undefined) next.driveLink = next.drive_link;
@@ -279,6 +280,7 @@
       description: "description",
       status: "status",
       driveLink: "drive_link",
+      projectDate: "project_date",
       createdAt: "created_at",
       updatedAt: "updated_at",
     };
@@ -632,6 +634,7 @@
         [columnMap.description]: payload.description,
         [columnMap.status]: payload.status,
         [columnMap.driveLink]: payload.driveLink,
+        [columnMap.projectDate]: payload.projectDate,
         [columnMap.createdAt]: payload.createdAt,
         [columnMap.updatedAt]: payload.updatedAt,
       });
@@ -645,6 +648,7 @@
         [columnMap.description]: payload.description,
         [columnMap.status]: payload.status,
         [columnMap.driveLink]: payload.driveLink,
+        [columnMap.projectDate]: payload.projectDate,
         [columnMap.updatedAt]: payload.updatedAt,
       });
       response = await supabase.from("projects").update(data).eq(columnMap.projectId, payload.projectId);

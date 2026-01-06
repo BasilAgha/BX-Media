@@ -258,7 +258,8 @@ function handleAddProject(d) {
     d.name || "",
     d.description || "",
     d.status || "in-progress",
-    d.driveLink || ""
+    d.driveLink || "",
+    d.projectDate || ""
   ]);
   return { ok: true };
 }

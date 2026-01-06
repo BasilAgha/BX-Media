@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const quickClientForm = document.getElementById("quickClientForm");
   const quickProjectClient = document.getElementById("quickProjectClient");
   const quickTaskProject = document.getElementById("quickTaskProject");
+  const quickProjectDate = document.getElementById("quickProjectDate");
 
   let clients = [];
   let projects = [];
@@ -264,6 +265,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const clientId = quickProjectClient?.value;
       const name = quickProjectForm.querySelector("#quickProjectName")?.value.trim();
       const description = quickProjectForm.querySelector("#quickProjectDesc")?.value.trim() || "";
+      const projectDate = quickProjectDate?.value || "";
       const driveLink = quickProjectForm.querySelector("#quickProjectDrive")?.value.trim() || "";
       const projectId = "project_" + Date.now();
 
@@ -282,6 +284,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           projectName: name,
           title: name,
           description,
+          projectDate: projectDate || null,
           status: "in-progress",
           driveLink,
           createdAt: new Date().toISOString(),

@@ -42,6 +42,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const projectEditStatus = document.getElementById("projectEditStatus");
   const projectEditClient = document.getElementById("projectEditClient");
   const projectEditDrive = document.getElementById("projectEditDrive");
+  const projectEditDate = document.getElementById("projectEditDate");
   const projectEditDelete = document.getElementById("projectEditDelete");
 
   const showActionStatus = (message, type = "success") => {
@@ -120,6 +121,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     if (projectEditName) projectEditName.value = project.name || "";
     if (projectEditDescription) projectEditDescription.value = project.description || "";
+    if (projectEditDate) projectEditDate.value = project.projectDate || project.project_date || "";
     if (projectEditStatus) projectEditStatus.value = project.status || "not-started";
     if (projectEditClient) projectEditClient.innerHTML = buildClientOptions(project.clientId);
     if (projectEditDrive) projectEditDrive.value = project.driveLink || "";
@@ -249,6 +251,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       const pTasks = tasks.filter((t) => t.projectId === p.projectId);
       const progress = BXCore.computeProjectProgress(pTasks);
       const client = clients.find((c) => c.clientId === p.clientId);
+      const projectDateRaw = p.projectDate || p.project_date || "";
+      const projectDateLabel = projectDateRaw ? BXCore.formatDate(projectDateRaw) : "TBD";
       const card = document.createElement("article");
       card.className = "project-card";
       card.dataset.projectId = p.projectId;
@@ -259,6 +263,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             <p class="project-desc">${p.description || ""}</p>
             <p class="project-desc" style="font-size:0.8rem;margin-top:0.2rem;">
               Client: <strong>${client?.clientName || client?.username || "Unknown"}</strong>
+            </p>
+            <p class="project-desc" style="font-size:0.8rem;margin-top:0.2rem;">
+              Project date: <strong>${projectDateLabel}</strong>
             </p>
           </div>
           <div class="project-card-actions">
@@ -521,6 +528,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
       const nextDescription = projectEditDescription ? projectEditDescription.value.trim() : "";
+      const nextProjectDate = projectEditDate && projectEditDate.value ? projectEditDate.value : null;
       const nextStatus = projectEditStatus ? projectEditStatus.value : "not-started";
       const nextClientId = projectEditClient ? projectEditClient.value : currentEditProject.clientId;
       const nextDriveLink = projectEditDrive ? projectEditDrive.value.trim() : "";
@@ -534,6 +542,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           projectName: nextName,
           title: nextName,
           description: nextDescription,
+          projectDate: nextProjectDate,
           status: nextStatus,
           clientId: nextClientId,
           driveLink: nextDriveLink,
@@ -595,6 +604,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const projectId = "project_" + Date.now();
     const name = String(fd.get("name") || "").trim();
     const description = String(fd.get("description") || "").trim();
+    const projectDate = String(fd.get("projectDate") || "").trim();
     const status = String(fd.get("status") || "in-progress").trim();
     const driveLink = String(fd.get("driveLink") || "").trim();
 
@@ -607,6 +617,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         projectName: name,
         title: name,
         description,
+        projectDate: projectDate || null,
         status,
         driveLink,
         createdAt: new Date().toISOString(),
